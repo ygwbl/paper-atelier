@@ -23,6 +23,7 @@
 
 * 🏮 **国内极速直出**：[https://blog.hlat.xyz](https://blog.hlat.xyz)（腾讯云 BGP 直连 / 边缘毫秒级秒开）
 * 🌐 **国际 Anycast 穿透**：[https://hlat.top](https://hlat.top)（全球 CDN 边缘节点网络）
+* 🐧 **开源社区友链**：[LINUX DO](https://linux.do/)（真诚、友善、团结、专业的开源与技术极客社区）
 
 ---
 
@@ -194,10 +195,16 @@ paper-atelier/
 
 ---
 
-## 🐧 社区友链与鸣谢 (Acknowledgements & Community)
+## 友情链接
 
 本项目已入驻开源技术社区，特别鸣谢以下极客社区对本项目的关注与支持：
-* 🐧 **[LINUX DO](https://linux.do/)** — 真诚、友善、团结、专业的开源与技术极客社区。
+* [LINUX DO](https://linux.do/) — 真诚、友善、团结、专业的开源与技术极客社区
+
+---
+
+## 社区鸣谢 (Acknowledgements)
+
+感谢所有关注、测试与提出建议的极客伙伴，是开源社区的真诚分享让技术更具温度。
 
 ---
 
