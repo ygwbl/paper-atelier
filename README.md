@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://blog.hlat.xyz"><img src="https://img.shields.io/badge/Live_Demo-blog.hlat.xyz-b83b3b?style=for-the-badge&logo=safari&logoColor=white" alt="Live Demo"></a>
+  <a href="https://linux.do"><img src="https://img.shields.io/badge/Community-LINUX%20DO-2563eb?style=for-the-badge&logo=linux&logoColor=white" alt="LINUX DO"></a>
   <img src="https://img.shields.io/badge/Dependencies-ZERO-success?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Zero Dependencies">
   <img src="https://img.shields.io/badge/Memory-~30MB-blue?style=for-the-badge&logo=docker&logoColor=white" alt="Low Memory">
   <img src="https://img.shields.io/badge/Docker-Ready-2496ed?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Ready">
@@ -190,6 +191,13 @@ paper-atelier/
 1. **排版与无障碍 (A11y)**：优化中文排版阅读韵律，提高屏幕阅读器与键盘无障碍访问体验；
 2. **多语言与本地化**：为界面与回笔引擎提供更多优雅的多语言支持；
 3. **轻量动效**：在保证 60fps 与零依赖的前提下，进一步提升东方素纸微交互质感。
+
+---
+
+## 🐧 社区友链与鸣谢 (Acknowledgements & Community)
+
+本项目已入驻开源技术社区，特别鸣谢以下极客社区对本项目的关注与支持：
+* 🐧 **[LINUX DO](https://linux.do/)** — 真诚、友善、团结、专业的开源与技术极客社区。
 
 ---
 
