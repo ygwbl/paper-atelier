@@ -38,7 +38,7 @@
 // --------------------------------------------------------------------------
 // 0. Release Fingerprint & Auto-Busting Cache Healer
 // --------------------------------------------------------------------------
-const CURRENT_RELEASE_VER = '20261106_v42';
+const CURRENT_RELEASE_VER = '20261107_v47';
 try {
   if (localStorage.getItem('atelier_ver') !== CURRENT_RELEASE_VER) {
     localStorage.setItem('atelier_ver', CURRENT_RELEASE_VER);
@@ -787,7 +787,7 @@ function renderMessages() {
           <div class="msg-echo-box">
             <div class="echo-header">
               <div class="echo-sender">
-                <img src="/logo.png?v=20261106_v42" alt="工坊主理人" class="echo-avatar" onerror="this.onerror=null;this.src='/favicon.png';">
+                <img src="/logo.png?v=20261107_v47" alt="工坊主理人" class="echo-avatar" onerror="this.onerror=null;this.src='/favicon.png';">
                 <span class="echo-author-name">${escapeHtml(msg.echo.author || '工坊回笔')}</span>
                 <span class="echo-badge-seal">主理人</span>
               </div>
@@ -2577,7 +2577,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
   const BOOKMARK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg>';
-  const SECTION_IDS = ['essays', 'moments', 'artifacts', 'timeline', 'guestbook', 'atlas'];
+  const SECTION_IDS = ['essays', 'moments', 'timeline', 'guestbook', 'atlas'];
   const MOOD_HINT = { '静': '静 · 会心一阅', '思': '思 · 掩卷沉吟', '喜': '喜 · 相逢甚欢', '问': '问 · 愿闻其详' };
   const esc = (s) => escapeHtml(String(s == null ? '' : s));
 
@@ -2832,10 +2832,9 @@ window.addEventListener('DOMContentLoaded', () => {
     return [
       { token: '>1 文墨', label: '跳到文墨沉淀', hint: '章节 01', run: go('essays') },
       { token: '>2 闪念', label: '跳到灵感微语', hint: '章节 02', run: go('moments') },
-      { token: '>3 造物', label: '跳到运行造物', hint: '章节 03', run: go('artifacts') },
-      { token: '>4 足迹', label: '跳到折腾足迹', hint: '章节 04', run: go('timeline') },
-      { token: '>5 留墨', label: '跳到读者留墨', hint: '章节 05', run: go('guestbook') },
-      { token: '>6 来客', label: '跳到来客图 · 时光', hint: '章节 06', run: go('atlas') },
+      { token: '>3 足迹', label: '跳到折腾足迹', hint: '章节 03', run: go('timeline') },
+      { token: '>4 留墨', label: '跳到读者留墨', hint: '章节 04', run: go('guestbook') },
+      { token: '>5 来客', label: '跳到来客图 · 时光', hint: '章节 05', run: go('atlas') },
       { token: '>主题', label: '切换纸境心境', hint: 'T', run: () => cycleTheme() },
       { token: '>纸签', label: '仅看稍后读纸签', hint: 'B', run: toggleBookmarkFilter },
       { token: '>速查', label: '展开纸境速查笺', hint: '?', run: () => openSheet('shortcuts') },
@@ -4246,7 +4245,7 @@ window.addEventListener('DOMContentLoaded', () => {
     del(k) { try { localStorage.removeItem(k); } catch (e) {} }
   };
   const LS = { read: 'atelier_read_v35', visits: 'atelier_v35_visit_days', question: 'atelier_v35_q_pending' };
-  const SECTION_IDS = ['essays', 'moments', 'artifacts', 'timeline', 'guestbook', 'atlas'];
+  const SECTION_IDS = ['essays', 'moments', 'timeline', 'guestbook', 'atlas'];
 
   // 主理人十二问：服务端 config.dailyQuestions 可覆盖，缺省时用这一组
   const FALLBACK_QUESTIONS = [
@@ -4756,9 +4755,8 @@ window.addEventListener('DOMContentLoaded', () => {
   const SHEETS = [
     { id: 'essays',    num: '01', title: '文墨', desc: '长文与技术沉淀' },
     { id: 'moments',   num: '02', title: '闪念', desc: '随手记下的念头' },
-    { id: 'artifacts', num: '03', title: '造物', desc: '运行中的小作品' },
-    { id: 'timeline',  num: '04', title: '足迹', desc: '一路走来的刻度' },
-    { id: 'guestbook', num: '05', title: '留墨', desc: '给工坊留一句话' }
+    { id: 'timeline',  num: '03', title: '足迹', desc: '一路走来的刻度' },
+    { id: 'guestbook', num: '04', title: '留墨', desc: '给工坊留一句话' }
   ];
   const SEAL_FACES = ['纸', '境', '工', '坊'];
 
