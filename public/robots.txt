@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://hlat.top/sitemap.xml
+Sitemap: https://blog.hlat.xyz/sitemap.xml

@@ -1,0 +1,26 @@
+# ==============================================================================
+# .dockerignore · Paper Atelier
+# ==============================================================================
+.git
+.gitignore
+.github
+*.md
+!README.md
+__pycache__
+*.pyc
+*.pyo
+.env*
+!*.example
+data/*.json
+!data/*.example.json
+data/.stats-seen.json
+data/syndications
+data/tombstones.json
+data/visits.json
+data/stats.json
+data/resonances.json
+*.pem
+*.key
+*.bak*
+.DS_Store
+Thumbs.db

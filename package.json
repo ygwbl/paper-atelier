@@ -1,0 +1,30 @@
+{
+  "name": "paper-atelier",
+  "version": "1.0.0",
+  "description": "📜 Paper Atelier (纸境工坊) · 东方素纸美学、零依赖极简原生、AI 原生回笔与全自动自治策展博客系统",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "curator": "python3 curator_daemon.py",
+    "twitter": "python3 scripts/post_to_twitter.py"
+  },
+  "keywords": [
+    "blog",
+    "blog-engine",
+    "zero-dependency",
+    "minimalism",
+    "vanilla-js",
+    "takeo-paper",
+    "autonomous-curator",
+    "openai-compatible",
+    "deepseek",
+    "indieweb",
+    "indexnow",
+    "rss"
+  ],
+  "author": "Sxltx",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

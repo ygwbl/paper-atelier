@@ -1,0 +1,36 @@
+# ==============================================================================
+# 📜 Paper Atelier (纸境工坊) · Docker Compose
+# Zero-Config Production Deployment
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  atelier:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: paper-atelier:latest
+    container_name: paper-atelier
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # 持久化存储：文章、随笔、留言、站点配置
+      - ./data:/app/data
+      # 动态生成的社交媒体分享海报 (1200x630 OpenGraph)
+      - ./public/og:/app/public/og
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      # [可选] 管理员初始口令（首次启动若未设置将随机生成并在日志打印）
+      - ATELIER_INITIAL_PASSWORD=${ATELIER_INITIAL_PASSWORD:-}
+      # [可选] 大模型智能回笔配置（支持任意 OpenAI 兼容接口，如 DeepSeek / GLM / Kimi / Ollama）
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_BASE_URL=${AI_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/chat/completions}
+      - AI_MODEL=${AI_MODEL:-glm-4-flash}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

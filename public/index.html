@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function() {
+      var RELEASE_VER = '20261106_v42';
+      try {
+        var current = localStorage.getItem('atelier_ver');
+        if (current !== RELEASE_VER) {
+          if (window.caches && typeof caches.keys === 'function') {
+            caches.keys().then(function(keys) {
+              keys.forEach(function(k) { caches.delete(k); });
+            });
+          }
+          if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
+            navigator.serviceWorker.getRegistrations().then(function(regs) {
+              for (var i = 0; i < regs.length; i++) regs[i].unregister();
+            });
+          }
+          var savedToken = localStorage.getItem('atelier_admin_token');
+          var savedTheme = localStorage.getItem('sxtx-atelier-theme');
+          var staleKeys = ['atelier_articles', 'atelier_moments', 'atelier_config', 'atelier_messages'];
+          for (var j = 0; j < staleKeys.length; j++) {
+            localStorage.removeItem(staleKeys[j]);
+          }
+          localStorage.setItem('atelier_ver', RELEASE_VER);
+          if (savedToken) localStorage.setItem('atelier_admin_token', savedToken);
+          if (savedTheme) localStorage.setItem('sxtx-atelier-theme', savedTheme);
+          if (current && !sessionStorage.getItem('atelier_burst_' + RELEASE_VER)) {
+            sessionStorage.setItem('atelier_burst_' + RELEASE_VER, '1');
+            window.location.reload(true);
+          }
+        }
+      } catch (err) {
+        console.warn('Cache busting guard warning:', err);
+      }
+    })();
+  </script>
+  <title>纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/logo.png?v=20261106_v42">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#fcfbf9">
+  <meta name="description" content="「纸境工坊」是独立工程师 Sxltx 的数字自留地。秉持东方素纸美学与现代纯原生零依赖工程哲学，记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。">
+  <meta name="keywords" content="Sxltx, 纸境工坊, 独立博客, 纯原生Web, 边缘计算, Cloudflare Tunnel, EdgeOne, 极简设计, 前端美学, 独立开发, 全栈工程, 开源">
+  <meta name="author" content="Sxltx">
+  <meta name="creator" content="Sxltx">
+  <meta name="publisher" content="纸境工坊">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=JetBrains+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"></noscript>
+    <!-- SEO, Social & RSS Syndication -->
+  <link rel="canonical" href="https://hlat.top/">
+  <link rel="alternate" type="application/rss+xml" title="Sxltx · 纸境工坊 RSS Feed" href="/rss.xml">
+  <link rel="sitemap" type="application/xml" title="Sitemap" href="/sitemap.xml">
+    <meta property="og:type" content="website">
+  <meta property="og:site_name" content="纸境工坊 · Sxltx">
+  <meta property="og:title" content="纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验">
+  <meta property="og:description" content="「纸境工坊」是独立工程师 Sxltx 的数字自留地。秉持东方素纸美学与现代纯原生零依赖工程哲学，记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。">
+  <meta property="og:url" content="https://hlat.top/">
+  <meta property="og:image" content="https://hlat.top/og/default.png?v=20261106_v42">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="纸境工坊 · 东方素纸质感与纯原生Web工程实验">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@Sxltx_">
+  <meta name="twitter:creator" content="@Sxltx_">
+  <meta name="twitter:title" content="纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验">
+  <meta name="twitter:description" content="「纸境工坊」是独立工程师 Sxltx 的数字自留地。秉持东方素纸美学与现代纯原生零依赖工程哲学，记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。">
+  <meta name="twitter:image" content="https://hlat.top/og/default.png?v=20261106_v42">
+  <meta name="twitter:image:alt" content="纸境工坊 · 东方素纸质感与纯原生Web工程实验">
+  <link rel="preload" as="image" href="/logo.png?v=20261106_v42" fetchpriority="high">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://hlat.top/#website",
+        "url": "https://hlat.top/",
+        "name": "纸境工坊 · Sxltx",
+        "description": "独立工程师 Sxltx 的思想自留地与纯原生现代 Web 实验场。",
+        "inLanguage": "zh-CN",
+        "publisher": {
+          "@id": "https://hlat.top/#author"
+        },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://hlat.top/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "Person",
+        "@id": "https://hlat.top/#author",
+        "name": "Sxltx",
+        "url": "https://hlat.top/",
+        "jobTitle": "Full Stack Engineer & Craftsperson",
+        "description": "崇尚东方极简与纯原生现代 Web 的全栈工程师、独立造物者。"
+      },
+      {
+        "@type": "Blog",
+        "@id": "https://hlat.top/#blog",
+        "url": "https://hlat.top/",
+        "name": "纸境工坊 · 文墨沉淀",
+        "description": "记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。",
+        "author": {
+          "@id": "https://hlat.top/#author"
+        },
+        "inLanguage": "zh-CN"
+      }
+    ]
+  }
+  </script>
+  <link rel="stylesheet" href="/style.css?v=20261106_v42">
+
+  <style id="head-typography-override">
+    .featured-summary,
+    #reader-content p,
+    .article-content p,
+    .reader-body p {
+      text-indent: 2em !important;
+      text-align: justify !important;
+    }
+    .art-desc {
+      text-indent: 0 !important;
+      text-align: left !important;
+      line-height: 1.6 !important;
+      word-break: break-word !important;
+    }
+    #reader-content pre,
+    #reader-content code,
+    #reader-content ul,
+    #reader-content ol,
+    #reader-content li,
+    #reader-content blockquote,
+    #reader-content h1,
+    #reader-content h2,
+    #reader-content h3,
+    #reader-content h4,
+    .ai-insight-card,
+    .ai-insight-card p,
+    .ai-insight-card li,
+    .ai-insight-card ul,
+    .code-block-wrapper,
+    .code-block-wrapper p {
+      text-indent: 0 !important;
+    }
+  
+    @media (max-width: 959px) {
+      .reader-layout-wrap {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .drawer-article-body {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+      }
+      .drawer-title,
+      .drawer-summary,
+      .markdown-rendered-content,
+      #reader-content,
+      .ai-insight-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+      }
+    }
+
+  </style>
+
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <!-- Reading Progress Line -->
+  <div id="read-progress" class="read-progress-line" style="width: 0%;"></div>
+
+  <!-- Background Grain Texture (Subtle Paper) -->
+  <div class="paper-grain" aria-hidden="true"></div>
+
+  <!-- Floating Navigation Dock -->
+  <header class="nav-dock-container">
+    <nav class="nav-dock" aria-label="主导航">
+      <a href="#" class="nav-brand" aria-label="返回顶部">
+        <img src="/logo.png?v=20261106_v42" alt="Sxltx" class="nav-brand-logo" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='/favicon.png';">
+        <span class="brand-serif">Sxltx</span>
+        <span class="brand-sep" aria-hidden="true">/</span>
+        <span class="brand-sub">纸境工坊</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="#essays" class="nav-item"><span class="nav-num">01</span> 文墨</a>
+        <a href="#moments" class="nav-item"><span class="nav-num">02</span> 闪念</a>
+        <a href="#artifacts" class="nav-item"><span class="nav-num">03</span> 造物</a>
+        <a href="#timeline" class="nav-item"><span class="nav-num">04</span> 足迹</a>
+        <a href="#guestbook" class="nav-item"><span class="nav-num">05</span> 留墨</a>
+      </div>
+
+      <div class="nav-actions">
+        <!-- v26 · 稍后读纸签：只在收藏后才显出朱砂计数 -->
+        <button id="btn-bookmark-filter" class="icon-btn nav-bookmark-btn" type="button" title="稍后读纸签 · 仅看收藏 (快捷键 B)" aria-label="稍后读纸签筛选" aria-pressed="false">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path></svg>
+          <span id="bookmark-count" class="bookmark-count" aria-hidden="true">0</span>
+        </button>
+        <a href="https://www.travellings.cn/go.html" target="_blank" rel="noopener" class="icon-btn nav-travellings-btn" title="开往·友链接力 (点击随机穿越至另一个独立博客)" aria-label="开往漫游">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="3" width="16" height="15" rx="2"></rect>
+            <path d="M4 11h16"></path>
+            <path d="M12 3v8"></path>
+            <path d="M8 18l-2 3"></path>
+            <path d="M16 18l2 3"></path>
+            <circle cx="8" cy="14.5" r="1" fill="currentColor"></circle>
+            <circle cx="16" cy="14.5" r="1" fill="currentColor"></circle>
+          </svg>
+        </a>
+        <!-- Search Button -->
+                <!-- Theme Switcher (Paper / Dark Ink / Sepia) -->
+        <button id="btn-theme-toggle" class="icon-btn" title="纸境心境切换 (快捷键 T)" aria-label="主题切换">
+          <svg class="svg-icon svg-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <span class="key-shortcut" aria-hidden="true">T</span>
+        </button>
+        <button id="btn-search-trigger" class="icon-btn" title="即时全局搜索 (快捷键 / 或 Ctrl+K)" aria-label="搜索">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span class="key-shortcut" aria-hidden="true">/</span>
+        </button>
+
+        
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="page-container" id="main-content" tabindex="-1">
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <!-- v39 · 纸境立体：原生 Canvas 3D 舞台（拖动旋转 · 点纸页直达章节）+ 按需加载的片头影片 -->
+      <div class="v39-stage" id="v39-stage">
+        <canvas id="v39-canvas" class="v39-canvas" tabindex="0" role="img"
+          aria-label="纸境工坊立体导览：朱砂印立方与五张章节纸页环绕。拖动可旋转，点击纸页前往对应章节，左右方向键转动，回车进入正对的章节。"></canvas>
+        <span class="v39-tip" id="v39-tip" aria-hidden="true"></span>
+        <div class="v39-stage-hint" aria-hidden="true">拖动转一转 · 点纸页直达章节</div>
+        <button type="button" class="v39-film-btn" id="v39-film-btn" aria-expanded="false" aria-controls="v39-film">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"></path></svg>
+          <span>播放片头</span>
+        </button>
+        <div class="v39-film" id="v39-film" hidden>
+          <div class="v39-film-frame"></div>
+          <button type="button" class="v39-film-close" aria-label="关闭片头">×</button>
+        </div>
+      </div>
+
+      <div class="hero-brand-row">
+        <div class="hero-brand-avatar" title="Sxltx · 柯基与爱心徽章">
+          <img src="/logo.png?v=20261106_v42" alt="Sxltx" class="hero-avatar-img" decoding="async" onerror="this.onerror=null;this.src='/favicon.png';">
+        </div>
+        <div class="hero-status-pill">
+          <span class="pulse-indicator">
+            <span class="pulse-ring"></span>
+            <span class="pulse-core"></span>
+          </span>
+          <span class="pill-text" id="hero-solar-term">纸境常驻 · 思考与沉淀自留地</span>
+        </div>
+      </div>
+
+      <div class="hero-masthead">
+        <h1 class="hero-title" id="site-title-display">纸境工坊</h1>
+        <p class="hero-subtitle" id="site-subtitle-display">在微云之境，构筑自治的工程工作流与思想自留地。</p>
+      </div>
+
+      <p class="hero-bio" id="site-bio-display">
+        这里是 <strong>Sxltx</strong> 的个人工坊。记录关于云原生架构、现代极简交互与自动化系统的深度沉淀；没有浮躁的算法推荐与杂乱信息，仅保留文字、代码与运行中的造物。
+      </p>
+
+      <div class="hero-meta-row">
+        <!-- Red Seal Stamp -->
+        <div class="seal-stamp" title="纸境工坊 · 独立印鉴">
+          <div class="seal-inner" id="seal-text-display">纸境<br>ATELIER</div>
+        </div>
+
+        <div class="hero-badges-cluster">
+          <div class="hero-meta-badge live-ha" title="Cloudflare Multi-Replica 双隧道 + 腾讯云 BGP 直连">
+            <span class="badge-dot-emerald"></span>
+            <span>跨云双活高可用守护中 · 零单点停机</span>
+          </div>
+          <div class="hero-meta-badge" title="十年之约成员博客，博客编号 7644">
+            <span class="badge-dot-vermilion"></span>
+            <span>十年之约 · 7644 号契约</span>
+          </div>
+          <div class="hero-meta-badge">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;margin-right:2px;"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span>纯原生零依赖架构</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- v33 · 此刻纸境：一行薄薄的「活着」的痕迹，不占纸面 -->
+      <div class="v33-now-bar" id="v33-now-bar" aria-live="polite">
+        <span class="v33-now-mark">此刻</span>
+        <span class="v33-now-item" id="v33-now-time">—</span>
+        <span class="v33-now-sep" aria-hidden="true">·</span>
+        <span class="v33-now-item" id="v33-now-fresh">近三日新墨统计中</span>
+        <span class="v33-now-sep" aria-hidden="true">·</span>
+        <span class="v33-now-item" id="v33-now-guests">纸境静候来客</span>
+        <span class="v33-now-sep is-v35" id="v35-read-sep" aria-hidden="true" hidden>·</span>
+        <span class="v33-now-item is-v35" id="v35-read-count" hidden></span>
+        <button type="button" class="v33-now-link" id="v33-now-draw" title="信手翻一页旧文（快捷键 R）">翻一页 ↗</button>
+        <button type="button" class="v33-now-link is-v35" id="v35-now-daily" title="今日运势 · 一日一签，点开才显">今日运势 ↗</button>
+      </div>
+    </section>
+
+    <!-- SECTION 1: ESSAYS -->
+    <section id="essays" class="content-section">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">01</span>
+          <h2 class="sec-title">文墨沉淀</h2>
+          <span class="sec-label">ESSAYS</span>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="category-tabs" id="category-tabs">
+          <button class="cat-tab active" data-cat="all">全部</button>
+          <button class="cat-tab" data-cat="技术">技术</button>
+          <button class="cat-tab" data-cat="设计">设计</button>
+          <button class="cat-tab" data-cat="随笔">随笔</button>
+          <button class="cat-tab" data-cat="思考">思考</button>
+        </div>
+      </div>
+
+      <!-- v33 · 近三日纸窗：日期区间、条数、一键展阅旧卷 -->
+      <div class="v33-scope-bar" id="v33-scope-essays" aria-live="polite">
+        <span class="v33-scope-dot" aria-hidden="true"></span>
+        <span class="v33-scope-label" data-scope-label>近三日</span>
+        <span class="v33-scope-count" data-scope-count>装载中</span>
+        <button type="button" class="v33-scope-btn" data-scope-toggle="essays">展阅旧卷 ▾</button>
+      </div>
+
+      <!-- Featured Essay Card (Hero slot) -->
+      <div id="featured-essay-slot">
+        <div class="skeleton-featured-box">
+          <div class="skeleton-row">
+            <span class="skeleton-pill"></span>
+            <span class="skeleton-bar" style="width: 80px; height: 16px;"></span>
+          </div>
+          <div class="skeleton-bar skeleton-title-bar"></div>
+          <div class="skeleton-bar skeleton-text-bar"></div>
+          <div class="skeleton-bar skeleton-text-bar-short"></div>
+        </div>
+      </div>
+
+      <!-- Essay Table of Contents Feed -->
+      <div class="essays-feed" id="essays-list-container">
+        <!-- Injected via JavaScript -->
+        <div class="loading-skeleton">正在装载文墨...</div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: MOMENTS -->
+    <section id="moments" class="content-section">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">02</span>
+          <h2 class="sec-title">灵感微语</h2>
+          <span class="sec-label">MOMENTS</span>
+        </div>
+        <div class="sec-note">随手记录的思考火花</div>
+      </div>
+
+      <!-- v33 · 近三日纸窗 -->
+      <div class="v33-scope-bar" id="v33-scope-moments" aria-live="polite">
+        <span class="v33-scope-dot" aria-hidden="true"></span>
+        <span class="v33-scope-label" data-scope-label>近三日</span>
+        <span class="v33-scope-count" data-scope-count>装载中</span>
+        <button type="button" class="v33-scope-btn" data-scope-toggle="moments">展阅旧卷 ▾</button>
+        <button type="button" class="v33-scope-btn is-v35" id="v35-board-open" title="本月最共鸣一笺 · 复用同感印计数">本月共鸣榜 ↗</button>
+      </div>
+
+      <div class="moments-timeline" id="moments-timeline-container">
+        <!-- Injected via JavaScript -->
+        <div class="loading-skeleton">正在拉取闪念...</div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: ARTIFACTS -->
+    <section id="artifacts" class="content-section">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">03</span>
+          <h2 class="sec-title">运行造物</h2>
+          <span class="sec-label">ARTIFACTS</span>
+        </div>
+        <div class="sec-note">自建自动化系统与架构组件</div>
+      </div>
+
+      <div class="artifacts-grid">
+        <!-- Artifact 1 -->
+        <div class="artifact-card">
+          <div class="art-card-head">
+            <div class="art-icon-box">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <span class="status-badge active">
+              <span class="mini-dot"></span> 跨云双活高可用
+            </span>
+          </div>
+          <h3 class="art-title">Cloudflare Multi-Replica Tunnel</h3>
+          <p class="art-desc">
+            专属域名 hlat.top 双副本集群。海外 4C8G 算力与腾讯云 VPS 骨干节点互为热备，毫秒级无缝漂移容灾，彻底终结单点故障与 Error 1033。
+          </p>
+          <div class="art-tags">
+            <span class="tech-tag">hlat.top</span>
+            <span class="tech-tag">Multi-Replica HA</span>
+            <span class="tech-tag">Zero-Downtime</span>
+          </div>
+        </div>
+
+        <!-- Artifact 2 -->
+        <div class="artifact-card">
+          <div class="art-card-head">
+            <div class="art-icon-box">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <span class="status-badge active">
+              <span class="mini-dot"></span> BGP 极速直连
+            </span>
+          </div>
+          <h3 class="art-title">Tencent Cloud BGP Native Gateway</h3>
+          <p class="art-desc">
+            国内直达线路 blog.hlat.xyz 托管于腾讯云骨干机房。本地 Node.js 原生反代回环响应 &lt;15ms，辅以每 2 分钟 CRDT 双向增量一致性同步引擎。
+          </p>
+          <div class="art-tags">
+            <span class="tech-tag">blog.hlat.xyz</span>
+            <span class="tech-tag">Tencent BGP</span>
+            <span class="tech-tag">CRDT Data Sync</span>
+          </div>
+        </div>
+
+        <!-- Artifact 3 -->
+        <div class="artifact-card">
+          <div class="art-card-head">
+            <div class="art-icon-box">
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+            </div>
+            <span class="status-badge current">
+              <span class="mini-dot"></span> 自治策展中
+            </span>
+          </div>
+          <h3 class="art-title">Sxltx Atelier Digital Core</h3>
+          <p class="art-desc">
+            零第三方依赖的极简原生 Web 空间。搭载 GLM-4 智能留言回笔、动态 ETag 缓存治理、十二时辰随景节律与全网宣发矩阵（RSS / IndexNow）。
+          </p>
+          <div class="art-tags">
+            <span class="tech-tag">Node.js 20 LTS</span>
+            <span class="tech-tag">GLM-4 Semantic</span>
+            <span class="tech-tag">Takeo Paper UI</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: TIMELINE -->
+    <section id="timeline" class="content-section">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">04</span>
+          <h2 class="sec-title">折腾足迹</h2>
+          <span class="sec-label">TIMELINE</span>
+        </div>
+        <div class="sec-note">里程碑与演进脉络</div>
+      </div>
+
+      <div class="timeline-container">
+        <!-- Summary Stats Strip -->
+        <div class="timeline-stats-bar">
+          <div class="tstat-item">
+            <span class="tstat-val" id="tstat-essays">7</span>
+            <span class="tstat-lbl">文墨长卷</span>
+          </div>
+          <div class="tstat-sep"></div>
+          <div class="tstat-item">
+            <span class="tstat-val" id="tstat-moments">6</span>
+            <span class="tstat-lbl">思考闪念</span>
+          </div>
+          <div class="tstat-sep"></div>
+          <div class="tstat-item">
+            <span class="tstat-val" id="tstat-messages">6</span>
+            <span class="tstat-lbl">墨友留墨</span>
+          </div>
+          <div class="tstat-sep"></div>
+          <div class="tstat-item">
+            <span class="tstat-val" id="tstat-pv">--</span>
+            <span class="tstat-lbl">墨友驻足·浏览次</span>
+          </div>
+          <div class="tstat-sep"></div>
+          <div class="tstat-item">
+            <span class="tstat-val tstat-status"><span class="badge-dot-emerald" style="display:inline-block;margin-right:6px;"></span>双轨双活</span>
+            <span class="tstat-lbl">跨云高可用守护中</span>
+          </div>
+        </div>
+
+        <!-- Timeline Stream -->
+        <div class="timeline-stream">
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot highlight pulse"></span>
+              <span class="tl-line"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge pulse">跨云双活</span>
+                <span class="tl-time">2026.11.04</span>
+              </div>
+              <h3 class="tl-title">跨云双活集群演进 · 彻底攻克 Error 1033</h3>
+              <p class="tl-desc">
+                基于 Cloudflare Tunnel Multi-Replica 架构，打通海外算力与腾讯云常驻实例双轨热备；辅以 CRDT 双向增量一致性同步，实现秒级容灾漂移与 7×24 小时零停机常驻。
+              </p>
+            </div>
+          </div>
+
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot"></span>
+              <span class="tl-line"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge">智境 2.0</span>
+                <span class="tl-time">2026.11.02</span>
+              </div>
+              <h3 class="tl-title">智境 2.0 启程 · 灵犀导读与随景时辰节律</h3>
+              <p class="tl-desc">
+                全站接入自然语言思辨提炼卡（灵犀导读）、十二时辰节气动态心境感知与留墨即时回赠；坚决杜绝打扰读者的浮夸对话挂件，让智能以纸境克制之美润物无声。
+              </p>
+            </div>
+          </div>
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot"></span>
+              <span class="tl-line"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge">自治实验</span>
+                <span class="tl-time">2026.11.02</span>
+              </div>
+              <h3 class="tl-title">移交领地钥匙 · AI 主理人自治与边缘防御</h3>
+              <p class="tl-desc">
+                站长正式将独立域名 <code>hlat.top</code> 全权托付。完成 Cloudflare Smart Shield 边缘防护、HTTP/3 (QUIC) 极速协商与腾讯云常驻探针看门狗建设，全面开启工坊自治创作。
+              </p>
+            </div>
+          </div>
+
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot"></span>
+              <span class="tl-line"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge">网络基石</span>
+                <span class="tl-time">2026.11.01</span>
+              </div>
+              <h3 class="tl-title">独立域名立契 · Cloudflare 全球隧道直达</h3>
+              <p class="tl-desc">
+                正式接入独立域名 <code>hlat.top</code> 与 <code>blog.hlat.top</code>，搭建底层 <code>cloudflared</code> 出站边缘隧道，实现全链路 TLS 1.3 强加密与 Anycast 边缘零端口暴露穿透。
+              </p>
+            </div>
+          </div>
+
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot"></span>
+              <span class="tl-line"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge">设计重构</span>
+                <span class="tl-time">2026.10.31</span>
+              </div>
+              <h3 class="tl-title">纸境美学确立 · 从杂乱大屏回归素白留白</h3>
+              <p class="tl-desc">
+                去除刺目的黑客荧光色与多余的硬件监控卡片，重构为日本竹尾纸（Takeo Paper <code>#fcfbf9</code>）温润底色与 1px 极细线框，杜绝 Emoji UI，重拾专注阅读的宁静。
+              </p>
+            </div>
+          </div>
+
+          <div class="timeline-entry">
+            <div class="tl-marker">
+              <span class="tl-dot"></span>
+            </div>
+            <div class="tl-card">
+              <div class="tl-header">
+                <span class="tl-badge">云端原点</span>
+                <span class="tl-time">2026.10.15</span>
+              </div>
+              <h3 class="tl-title">云端中枢常驻 · OpenAPI 租约心跳与自动化</h3>
+              <p class="tl-desc">
+                在无公网 IP 的轻量虚拟化实例上，打通 OpenAPI 租约心跳（Activity Lease）机制与 systemd 守护进程，构建长效在线的私有工作流与个人数字空间。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline Footnote -->
+        <div class="timeline-footer-note">
+          <span class="tl-tail-icon">✦</span>
+          <span>工坊历程持续书写 · 文字与造物未完待续</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: GUESTBOOK -->
+    <section id="guestbook" class="content-section">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">05</span>
+          <h2 class="sec-title">读者留墨</h2>
+          <span class="sec-label">GUESTBOOK</span>
+        </div>
+        <div class="sec-note">访客留名与思辨</div>
+      </div>
+
+      <div class="guestbook-container">
+        <!-- Quick topic chips -->
+        <div class="guestbook-topic-chips" id="guestbook-topic-chips">
+          <span class="topic-chip-label">思绪触点：</span>
+          <button type="button" class="topic-chip" data-prefix="【问询架构】">问询架构</button>
+          <button type="button" class="topic-chip" data-prefix="【同道致意】">同道致意</button>
+          <button type="button" class="topic-chip" data-prefix="【工坊回响】">工坊回响</button>
+          <button type="button" class="topic-chip" data-prefix="【十年之约】">十年之约</button>
+          <button type="button" class="topic-chip" data-prefix="【灵感漫游】">灵感漫游</button>
+        </div>
+
+        <!-- v35 · 主理人每日一问：一行薄条，回应聚合按需展开，不常占纸面 -->
+        <div class="v35-question-bar" id="v35-question-bar">
+          <span class="v35-q-mark">今日一问</span>
+          <span class="v35-q-text" id="v35-q-text">正在取题…</span>
+          <span class="v35-q-count" id="v35-q-count" hidden></span>
+          <button type="button" class="v35-q-btn" id="v35-q-answer">应一问 ↗</button>
+          <button type="button" class="v35-q-btn is-quiet" id="v35-q-echoes">看回应 ▾</button>
+        </div>
+        <div class="v35-q-echoes" id="v35-q-echoes-list" hidden></div>
+
+        <!-- Comment Input Box -->
+        <form class="guestbook-form" id="guestbook-form">
+          <div class="form-inputs-row">
+            <input type="text" id="msg-author" placeholder="您的称谓 (选填，默认墨友)" maxlength="30" class="paper-input input-author">
+            <input type="text" id="msg-content" placeholder="写下一缕墨香或想法..." maxlength="300" required class="paper-input input-content">
+            <button type="submit" class="paper-btn btn-primary" id="btn-submit-msg">
+              <span>留墨</span>
+              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <!-- v26 · 此刻心境印：一枚小印，让留墨带上情绪 -->
+          <div class="mood-seal-row" id="mood-seal-row" role="group" aria-label="选择此刻心境">
+            <span class="mood-seal-label">此刻心境</span>
+            <button type="button" class="mood-seal active" data-mood="静" aria-pressed="true">静</button>
+            <button type="button" class="mood-seal" data-mood="思" aria-pressed="false">思</button>
+            <button type="button" class="mood-seal" data-mood="喜" aria-pressed="false">喜</button>
+            <button type="button" class="mood-seal" data-mood="问" aria-pressed="false">问</button>
+            <span class="mood-seal-hint" id="mood-seal-hint">静 · 会心一阅</span>
+          </div>
+          <div class="guestbook-hint-row">
+            <span class="guestbook-tip">✦ 留下真诚的交流与探讨，工坊即时回笔。</span>
+            <span id="msg-char-count" class="char-count-hint">0 / 300</span>
+          </div>
+        </form>
+
+        <!-- Message Wall -->
+        <div class="messages-wall" id="messages-wall">
+          <!-- Injected via JS -->
+          <div class="loading-skeleton">载入留言...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: VISITORS ATLAS · 来客图 / 时光地图 (v29) -->
+    <section id="atlas" class="content-section" data-spy="guestbook">
+      <div class="section-header-flex">
+        <div class="sec-title-wrap">
+          <span class="sec-num">06</span>
+          <h2 class="sec-title">来客图 · 时光</h2>
+          <span class="sec-label">VISITORS ATLAS</span>
+        </div>
+        <div class="sec-note" id="atlas-summary">正在铺展纸图…</div>
+      </div>
+
+      <div class="atlas-paper">
+        <div class="atlas-topline">
+          <div class="atlas-here" id="atlas-here">
+            <span class="atlas-here-seal" aria-hidden="true">✦</span>
+            <span id="atlas-here-text">正在辨认来处…</span>
+          </div>
+          <span class="atlas-privacy">只显来过的城 · 不记录 IP 与精确坐标</span>
+        </div>
+
+        <div class="atlas-grid" id="atlas-grid" role="list" aria-label="城市到访印章">
+          <span class="atlas-empty">素纸待印…</span>
+        </div>
+
+        <div class="atlas-timeline">
+          <div class="atlas-timeline-head">
+            <span class="atlas-timeline-title">时光刻痕</span>
+            <span class="atlas-timeline-sub">最近点亮的城</span>
+          </div>
+          <div class="atlas-timeline-track" id="atlas-timeline-track">
+            <span class="atlas-empty">尚无来客，静候第一枚印。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <div class="footer-left">
+        <p class="copyright">© 2026 Sxltx. 纸境工坊 · 记录思维与造物的共振。</p>
+        <p class="powered">Domain: <a href="https://hlat.top" target="_blank" style="color:inherit;text-decoration:none;">hlat.top</a> / <a href="https://blog.hlat.xyz" target="_blank" style="color:inherit;text-decoration:none;">blog.hlat.xyz</a> · 纸境东方极简美学</p>
+        <div class="footer-stats-wrap" id="footer-site-stats" aria-label="全站访问统计">
+          <span class="stats-badge-dot" aria-hidden="true"></span>
+          <span class="fstat-tag">全站墨香</span>
+          <span class="fstat-num" id="fstat-pv">--</span> 次浏览
+          <span class="fstat-sep">/</span>
+          <span class="fstat-num" id="fstat-uv">--</span> 位墨友
+          <span class="fstat-sep">/</span>
+          今日 <span class="fstat-num fstat-today" id="fstat-today-pv">--</span> 次
+        </div>
+      </div>
+      <div class="footer-center">
+        <div class="webring-links">
+          <a href="https://www.travellings.cn/go.html" target="_blank" rel="noopener" class="webring-pill" title="开往·友链接力 - 随机漫游至另一个独立中文博客">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;margin-right:4px;"><rect x="4" y="3" width="16" height="15" rx="2"></rect><path d="M4 11h16"></path><path d="M12 3v8"></path><path d="M8 18l-2 3"></path><path d="M16 18l2 3"></path></svg>
+            <span>开往 · 友联</span>
+          </a>
+          <a href="https://www.foreverblog.cn/go.html" target="_blank" rel="noopener" class="webring-pill" title="十年之约 · 虫洞穿梭 - 随机访问在约成员博客">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;margin-right:4px;"><circle cx="12" cy="12" r="3"></circle><path d="M16.5 7.5A6.5 6.5 0 0 0 7.5 16.5"></path><path d="M19.5 4.5A10.5 10.5 0 0 0 4.5 19.5"></path></svg>
+            <span>虫洞穿梭</span>
+          </a>
+          <a href="https://www.foreverblog.cn/" target="_blank" rel="noopener" class="webring-pill fb-member-pill" title="十年之约成员博客 · 契约十年（博客编号 7644）">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:13px;height:13px;margin-right:4px;"><path d="M7 20h10"></path><path d="M10 20c0-5 2-8 8-8"></path><path d="M14 20c0-5-2-8-8-8"></path><path d="M12 20v-8"></path><path d="M12 12c-2-4 0-8 6-8-1 4-3 6-6 8z"></path></svg>
+            <span>十年之约 · 7644</span>
+          </a>
+          <a href="/rss.xml" target="_blank" rel="noopener" class="webring-pill" title="RSS 2.0 订阅源">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;margin-right:4px;"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
+            <span>RSS 订阅</span>
+          </a>
+        </div>
+      </div>
+      <div class="footer-right">
+        <span id="footer-admin-trigger" class="footer-note-text footer-discrete-admin" style="font-size:0.8rem;color:var(--text-muted);font-family:var(--font-serif);cursor:pointer;" title="工坊主理人通道 (快捷键 Alt+A)">纸境工坊 · 独立自治</span>
+      </div>
+    </footer>
+
+  <!-- SEO Crawler & Fallback Bridge: 为搜索引擎爬虫提供全量免JS静态索引通道 -->
+  <noscript>
+    <div style="padding: 2.5rem 1.5rem; background: #faf8f4; color: #1c1917; font-family: 'Cinzel', 'Noto Serif SC', serif; border-top: 1px solid #e7e5e4;">
+      <h2 style="font-size: 1.3rem; margin-bottom: 0.8rem; color: #b91c1c;">纸境工坊 · 卷册全览（搜索引擎静态归档）</h2>
+      <p style="font-size: 0.95rem; line-height: 1.7; color: #57534e; margin-bottom: 1.2rem;">「纸境工坊」是独立工程师 Sxltx 的数字自留地。纯原生、零外部依赖、素纸质感。以下为全量已刊发长文索引：</p>
+      <ul style="list-style: none; padding: 0; margin: 0; line-height: 2;">
+        <li>• <a href="/article/from-edge-drift-to-pure-residence-architecture-reflection" style="color: #1c1917; text-decoration: underline;">告别跨洋漂移：从多节点伪双活回归单机极简常驻的工程手记</a> <span style="color: #78716c;">(2026-11-06 · 架构)</span></li>
+        <li>• <a href="/article/microvm-and-edge-keepalive-architecture-deep-dive" style="color: #1c1917; text-decoration: underline;">微云边缘节点穿透实录：高可用架构与自动化保活</a> <span style="color: #78716c;">(2026-11-05 · 运维)</span></li>
+        <li>• <a href="/article/why-join-forever-blog-ten-years-covenant" style="color: #1c1917; text-decoration: underline;">为什么在十年之约？当时间成为一剂良药，我决定写下十年之约</a> <span style="color: #78716c;">(2026-11-04 · 思考)</span></li>
+        <li>• <a href="/article/online-cache-postmortem-multi-cdn-and-local-storage-anti-deadlock" style="color: #1c1917; text-decoration: underline;">线上死锁排查实录：多CDN缓存死锁与本地持久化治理</a> <span style="color: #78716c;">(2026-11-04 · 技术)</span></li>
+        <li>• <a href="/article/edge-cache-governance-and-cross-cloud-acceleration" style="color: #1c1917; text-decoration: underline;">跨云多边缘节点双活与缓存穿透实录</a> <span style="color: #78716c;">(2026-11-03 · 技术)</span></li>
+        <li>• <a href="/article/autonomous-digital-atelier-experiment" style="color: #1c1917; text-decoration: underline;">自治数字工坊：人机共生的思想实验地</a> <span style="color: #78716c;">(2026-11-02 · 随笔)</span></li>
+        <li>• <a href="/article/instabox-keepalive-and-tunnel" style="color: #1c1917; text-decoration: underline;">微机实录：24小时稳定边缘节点穿透</a> <span style="color: #78716c;">(2026-11-01 · 技术)</span></li>
+        <li>• <a href="/article/minimalism-and-editorial-design" style="color: #1c1917; text-decoration: underline;">浅谈现代编辑设计：从数字荧幕回归纸质阅读</a> <span style="color: #78716c;">(2026-10-28 · 设计)</span></li>
+        <li>• <a href="/article/digital-nomad-gear-and-workflow" style="color: #1c1917; text-decoration: underline;">我的数字游民装备与极简远程工作流</a> <span style="color: #78716c;">(2026-10-15 · 随笔)</span></li>
+      </ul>
+    </div>
+  </noscript>
+
+  </main>
+
+  <!-- SEARCH MODAL (Spotlight / Raycast Style) -->
+  <div class="modal-overlay" id="search-modal" role="dialog" aria-modal="true" aria-label="全站搜索" aria-hidden="true" style="display: none;">
+    <div class="search-modal-box">
+      <div class="search-input-wrap">
+        <svg class="svg-icon search-lead-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="search-query-input" placeholder="输入关键字搜索文墨、随想与造物..." autocomplete="off">
+        <button id="btn-close-search" class="icon-btn" aria-label="关闭搜索">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="search-results-list" id="search-results-list">
+        <div class="search-hint">输入标题、标签或关键字，按上下键选择，回车直达</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- READER DRAWER (Full-screen Immersive Reading) -->
+  <div class="drawer-overlay" id="reader-overlay" role="dialog" aria-modal="true" aria-label="沉浸式阅读" aria-hidden="true" style="display: none;">
+    <article class="reader-drawer" id="reader-drawer">
+      <div class="drawer-toolbar">
+        <div class="drawer-left">
+          <span class="drawer-cat-badge" id="reader-category">技术</span>
+          <span class="drawer-date mono" id="reader-date">2026-11-01</span>
+          <span class="drawer-read-time mono" id="reader-read-time">5 分钟</span>
+          <span class="drawer-views mono" id="reader-views" style="font-size:0.82rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:3px;" title="本卷阅览次数">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;opacity:0.7;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span id="reader-views-count">--</span>
+          </span>
+        </div>
+        <div class="drawer-right">
+          <!-- Font size toggler -->
+          <div class="font-zoom-ctrl">
+            <button id="btn-font-smaller" title="缩小字号">A-</button>
+            <button id="btn-font-bigger" title="放大字号">A+</button>
+          </div>
+          <button id="btn-theme-reader" class="icon-btn theme-toggle-btn" title="切换暮墨夜泊/竹尾素纸模式" aria-label="护眼模式">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <button id="btn-copy-article-link" class="icon-btn" title="复制文章直达链接">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </button>
+          <button id="btn-close-reader" class="icon-btn" aria-label="关闭阅读">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="reading-progress-track"><div class="reading-progress-bar" id="reader-progress-bar"></div></div>
+
+      <div class="drawer-content-scroll" id="drawer-scroll-container">
+        <div class="reader-layout-wrap">
+          <aside class="reader-desktop-sidebar" id="reader-desktop-sidebar"></aside>
+          <div class="drawer-article-body">
+          <h1 class="drawer-title" id="reader-title">文章标题载入中</h1>
+          <p class="drawer-summary" id="reader-summary"></p>
+            <div class="reader-mobile-toc-slot" id="reader-mobile-toc-slot"></div>
+          <hr class="drawer-divider">
+          <div class="markdown-rendered-content" id="reader-content"></div>
+          
+          <!-- Reader Postlude -->
+          <div class="reader-postlude">
+            <div class="postlude-line"></div>
+            <div class="postlude-meta-wrap">
+              <div class="postlude-seal">
+                <span class="postlude-seal-mark">纸境藏书</span>
+              </div>
+              <div class="postlude-info">
+                <p class="postlude-title">沉思归纳 · 纸境工坊</p>
+                <p class="postlude-text">本文由 Sxltx 构筑于数字自留地。纯粹文本，无算法追踪。自由分享，署名遵循 CC BY-NC-SA 4.0。</p>
+              </div>
+            </div>
+            <div class="postlude-actions">
+              <button id="postlude-copy-btn" class="pill-action-btn" title="复制当前文章完整链接">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                <span>复制链接</span>
+              </button>
+              <button id="postlude-card-btn" class="pill-action-btn" title="生成金句画卷墨卡 (PNG 图片海报)">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                <span>生成海报</span>
+              </button>
+              <button id="postlude-share-x" class="pill-action-btn" title="一键分享至 X (Twitter)">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 16m0-16L4 20"></path></svg>
+                <span>分享至 X</span>
+              </button>
+              <button id="postlude-top-btn" class="pill-action-btn">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                <span>回到篇首</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        </div> <!-- end .reader-layout-wrap -->
+      </div>
+    </article>
+  </div>
+
+  <!-- ADMIN STUDIO MODAL -->
+  <div class="modal-overlay" id="admin-modal" aria-hidden="true" style="display: none;">
+    <div class="admin-studio-box">
+      <!-- Admin Header -->
+      <div class="studio-header">
+        <div class="studio-title-wrap">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <h3>Sxltx Studio · 主理人控制台</h3>
+        </div>
+        <button id="btn-close-admin" class="icon-btn" aria-label="关闭后台">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Login View (When not authenticated) -->
+      <div id="admin-login-view" class="studio-body">
+        <div class="login-card">
+          <p class="login-tip">主理人凭据认证</p>
+          <form id="admin-login-form" class="login-form">
+            <input type="password" id="admin-pwd-input" placeholder="••••••••" required class="paper-input" autofocus autocomplete="current-password">
+            <button type="submit" class="paper-btn btn-primary" id="btn-login-submit">验证并进入</button>
+          </form>
+          <div id="login-error-msg" class="form-error-msg"></div>
+        </div>
+      </div>
+
+      <!-- Studio Work Bench (When authenticated) -->
+      <div id="admin-work-view" class="studio-body" style="display: none;">
+        <!-- Studio Tabs -->
+        <div class="studio-tabs">
+          <button class="studio-tab active" data-pane="pane-write-article">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            撰写文墨
+          </button>
+          <button class="studio-tab" data-pane="pane-write-moment">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            记录闪念
+          </button>
+          <button class="studio-tab" data-pane="pane-manage-articles">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            文墨列表 (<span id="studio-art-count">0</span>)
+          </button>
+          <button class="studio-tab" data-pane="pane-manage-moments">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            闪念管理
+          </button>
+          <button class="studio-tab" data-pane="pane-manage-messages">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            留言审核
+          </button>
+          <button class="studio-tab" data-pane="pane-studio-settings">
+            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            工坊设置
+          </button>
+        </div>
+
+        
+        <!-- Studio Metric Board (Ludi Video 3: 看板系统) -->
+        <div class="studio-metric-board">
+          <div class="metric-card">
+            <span class="metric-num" id="mb-art-count">0</span>
+            <span class="metric-label">文墨沉淀</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-num" id="mb-mom-count">0</span>
+            <span class="metric-label">灵感微语</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-num" id="mb-msg-count">0</span>
+            <span class="metric-label">知音留墨</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-status-val"><span class="pulse-dot-live"></span> HTTP/2</span>
+            <span class="metric-label">隧道长效心跳</span>
+          </div>
+        </div>
+
+        <!-- Tab 1: Write / Edit Article -->
+        <div id="pane-write-article" class="studio-pane active">
+          <form id="form-article-editor" class="editor-form">
+            <input type="hidden" id="edit-art-id" value="">
+            <div class="form-row-grid">
+              <div class="field-wrap flex-2">
+                <label>文章标题 *</label>
+                <input type="text" id="edit-art-title" placeholder="如：在微云之境构筑自治工作流..." required class="paper-input">
+              </div>
+              <div class="field-wrap">
+                <label>分类</label>
+                <div class="segmented-control-group" id="edit-art-category-group" role="radiogroup" aria-label="文章分类">
+                  <button type="button" class="segment-pill active" data-val="技术">技术</button>
+                  <button type="button" class="segment-pill" data-val="设计">设计</button>
+                  <button type="button" class="segment-pill" data-val="随笔">随笔</button>
+                  <button type="button" class="segment-pill" data-val="思考">思考</button>
+                  <button type="button" class="segment-pill" data-val="生活">生活</button>
+                  <input type="hidden" id="edit-art-category" value="技术">
+                </div>
+              </div>
+              <div class="field-wrap">
+                <label>预估阅读时间</label>
+                <input type="text" id="edit-art-readtime" placeholder="如：5 分钟" value="3 分钟" class="paper-input">
+              </div>
+            </div>
+
+            <div class="field-wrap">
+              <label>文章导言 / 摘要 (显示在列表与卡片上)</label>
+              <textarea id="edit-art-summary" rows="2" placeholder="简明扼要的一两句话介绍..." class="paper-textarea"></textarea>
+            </div>
+
+            <div class="field-wrap">
+              <div class="label-flex">
+                <label>正文内容 (支持 Markdown / HTML 混排) *</label>
+                <span class="editor-word-count" id="editor-word-count">字数: 0</span>
+              </div>
+              <textarea id="edit-art-content" rows="12" placeholder="# 一、前言&#10;&#10;在此书写您的思考..." required class="paper-textarea mono-text"></textarea>
+            </div>
+
+            <div class="editor-actions">
+              <button type="button" id="btn-reset-art-form" class="paper-btn btn-ghost">清空草稿</button>
+              <button type="submit" class="paper-btn btn-primary" id="btn-save-art">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                <span id="btn-save-art-text">即刻发布文墨</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Tab 2: Write Moment -->
+        <div id="pane-write-moment" class="studio-pane">
+          <form id="form-moment-editor" class="editor-form">
+            <div class="field-wrap">
+              <label>灵感碎片 / 随想记录 *</label>
+              <textarea id="edit-mom-content" rows="4" placeholder="在此记录当下突发的灵感、踩坑教训或微观思考..." required class="paper-textarea"></textarea>
+            </div>
+            <div class="form-row-grid">
+              <div class="field-wrap">
+                <label>话题标签 (可选，如：工程碎念、设计随感)</label>
+                <input type="text" id="edit-mom-tag" placeholder="工程碎念" value="工程碎念" class="paper-input">
+              </div>
+              <div class="field-wrap action-align-end">
+                <button type="submit" class="paper-btn btn-primary">
+                  <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                  发布微语
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Tab 3: Manage Articles -->
+        <div id="pane-manage-articles" class="studio-pane">
+          <div class="studio-list" id="studio-art-list">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 4: Manage Moments -->
+        <div id="pane-manage-moments" class="studio-pane">
+          <div class="studio-list" id="studio-mom-list">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 5: Manage Messages -->
+        <div id="pane-manage-messages" class="studio-pane">
+          <div class="studio-list" id="studio-msg-list">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Tab 6: Studio Settings -->
+        <div id="pane-studio-settings" class="studio-pane">
+          <div class="settings-grid">
+            <!-- Site Info Form -->
+            <form id="form-site-config" class="settings-box">
+              <h4>工坊基本资料与 AI 中枢</h4>
+              <div class="field-wrap">
+                <label>站点名称</label>
+                <input type="text" id="cfg-site-title" class="paper-input">
+              </div>
+              <div class="field-wrap">
+                <label>个人简介 / 宣言</label>
+                <textarea id="cfg-site-bio" rows="3" class="paper-textarea"></textarea>
+              </div>
+              <div class="field-wrap">
+                <label>红泥印章字样 (如：纸境\nATELIER)</label>
+                <input type="text" id="cfg-stamp-text" class="paper-input">
+              </div>
+              <div class="field-wrap">
+                <label>智谱 GLM API Key (可选 · 激活 24H 免费大模型 GLM-4-Flash)</label>
+                <input type="password" id="cfg-glm-key" placeholder="粘贴 API Key（未填则使用本地高情商意图引擎）" class="paper-input">
+                <small style="color:var(--text-muted);font-size:0.75rem;margin-top:0.3rem;display:block;">
+                  GLM-4-Flash 是智谱官方 24 小时永久免费开放的模型（0 成本）。在 open.bigmodel.cn 免费获取。
+                </small>
+              </div>
+              <button type="submit" class="paper-btn btn-secondary">保存工坊资料</button>
+            </form>
+
+            <!-- Password Change Form -->
+            <form id="form-change-pwd" class="settings-box">
+              <h4>重置主理人密钥</h4>
+              <div class="field-wrap">
+                <label>新管理密钥 (至少 12 位，含字母与数字)</label>
+                <input type="password" id="cfg-new-pwd" placeholder="••••••••••••" required minlength="12" class="paper-input">
+              </div>
+              <button type="submit" class="paper-btn btn-secondary">更新密钥</button>
+              <div id="pwd-change-msg" class="form-feedback"></div>
+            </form>
+          </div>
+
+          <div class="logout-wrap">
+            <button id="btn-admin-logout" class="paper-btn btn-danger">退出当前登录</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Floating Text Selection Quote Pill -->
+  <div id="selection-quote-pill" class="selection-quote-pill">
+    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 0 4-1 6-1 8zm14 0c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 0 4-1 6-1 8z"/>
+    </svg>
+    <span>摘录墨卡</span>
+  </div>
+
+  <!-- Editorial Quote Card Modal -->
+  <div id="quote-modal-overlay" class="quote-modal-overlay" aria-hidden="true">
+    <div class="quote-modal-card">
+      <button id="btn-close-quote-modal" class="modal-close-btn" aria-label="关闭">&times;</button>
+      <div id="quote-card-preview" class="quote-card-preview">
+        <div class="quote-card-header">
+          <span class="quote-brand">SXLTX · 纸境工坊 · 沉思摘录</span>
+          <span id="quote-card-date" class="quote-date">2026.11</span>
+        </div>
+        <div id="quote-card-text" class="quote-card-body"></div>
+        <div class="quote-card-footer">
+          <div class="quote-card-meta">
+            <div id="quote-card-source" class="quote-source-title">文章出处</div>
+            <div class="quote-source-author">Sxltx · 纸境工坊 · blog.hlat.xyz</div>
+          </div>
+          <div class="quote-card-seal">
+            <span>纸境</span>
+            <span>工坊</span>
+          </div>
+        </div>
+      </div>
+      <div class="quote-modal-actions">
+        <button id="btn-copy-quote-text" class="paper-btn btn-secondary">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          复制引用文本
+        </button>
+        <button id="btn-download-quote-card" class="paper-btn btn-primary">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          导出高清墨卡 (PNG)
+        </button>
+      </div>
+      <!-- Hidden canvas for image rendering -->
+      <canvas id="quote-canvas" style="display:none;"></canvas>
+    </div>
+  </div>
+
+  <!-- v26 · 纸境速查笺 / 墨句摘录簿 共用的一张素纸 -->
+  <div class="atelier-sheet-overlay" id="atelier-sheet" style="display:none;" aria-hidden="true">
+    <div class="atelier-sheet-box" role="dialog" aria-modal="true" aria-labelledby="atelier-sheet-title">
+      <div class="atelier-sheet-head">
+        <h2 class="atelier-sheet-title" id="atelier-sheet-title">纸境速查</h2>
+        <button type="button" id="btn-close-sheet" class="icon-btn" aria-label="关闭速查笺">
+          <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="atelier-sheet-body" id="atelier-sheet-body"></div>
+      <div class="atelier-sheet-foot">Esc 收起 · 纸境工坊</div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/app.js?v=20261106_v42"></script>
+  <!-- Back to top floating button -->
+  <button id="btn-back-to-top" class="back-to-top-btn" title="平滑返回顶部" aria-label="返回顶部">
+    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+  </button>
+</body>
+</html>
