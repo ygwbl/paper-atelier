@@ -4852,21 +4852,18 @@ window.addEventListener('DOMContentLoaded', () => {
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
 
-    // v57: 东方金石水墨与古金箔浮尘微粒 (三维景深层级分布)
+    // 东方松烟空灵微尘 (极简主义：仅保留28粒极微小墨雾微粒，纯净淡雅，彻底清除各色噪点)
     const dots = [];
-    for (let i = 0; i < 110; i++) {
-      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.8 + Math.random() * 2.2;
+    for (let i = 0; i < 28; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.6 + Math.random() * 2.4;
       const s = Math.sqrt(1 - u * u);
-      const rnd = Math.random();
-      const kind = rnd < 0.6 ? 0 : (rnd < 0.85 ? 1 : 2); // 0=墨尘(60%), 1=古金箔(25%), 2=赤砂微星(15%)
       dots.push({
         x: r * s * Math.cos(th),
-        y: u * r * 0.62,
+        y: u * r * 0.55,
         z: r * s * Math.sin(th),
-        s: (kind === 0 ? 0.65 : 1.15) + Math.random() * 1.4,
+        s: 0.35 + Math.random() * 0.45,
         ph: Math.random() * 6.28,
-        kind: kind,
-        twinkle: 1.6 + Math.random() * 1.8
+        twinkle: 1.2 + Math.random() * 1.5
       });
     }
 
@@ -4957,25 +4954,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
       faces.sort((a, b) => b.z - a.z);
 
-      // 远处墨点与金箔纸屑微粒
+      // 空间松烟墨气微尘（极度克制、虚焦柔和）
       const dp = dots.map(d => {
-        const p = project(rotY([d.x, d.y + Math.sin(t + d.ph) * 0.12, d.z], t * 0.05));
-        p.s = d.s; p.kind = d.kind; p.ph = d.ph; p.twinkle = d.twinkle;
+        const p = project(rotY([d.x, d.y + Math.sin(t * 0.8 + d.ph) * 0.1, d.z], t * 0.04));
+        p.s = d.s; p.ph = d.ph; p.twinkle = d.twinkle;
         return p;
       });
       const drawDots = (far) => dp.forEach(d => {
         if ((d.z > 9.5) !== far) return;
-        const distA = Math.max(0.06, Math.min(0.75, 1.65 - d.z / 9.2));
-        const tw = 0.72 + 0.28 * Math.sin(t * d.twinkle + d.ph);
-        if (d.kind === 1) { // 古法金箔 (暖金微光闪烁)
-          ctx.fillStyle = `rgba(218, 175, 55, ${(distA * tw * (pal.dark ? 0.75 : 0.55)).toFixed(3)})`;
-        } else if (d.kind === 2) { // 赤砂微星 (朱砂红星芒)
-          ctx.fillStyle = `rgba(184, 59, 59, ${(distA * tw * 0.65).toFixed(3)})`;
-        } else { // 传统淡墨微尘
-          ctx.fillStyle = rgb(pal.ink, 1, distA * (pal.dark ? 0.55 : 0.32));
-        }
+        const distA = Math.max(0.04, Math.min(0.42, 1.4 - d.z / 9.5));
+        const tw = 0.75 + 0.25 * Math.sin(t * d.twinkle + d.ph);
+        const alpha = distA * tw * (pal.dark ? 0.32 : 0.16);
         ctx.beginPath();
-        ctx.arc(d.x, d.y, d.s * dpr * (9.8 / d.z), 0, 6.283);
+        ctx.fillStyle = rgb(pal.ink, 1, alpha);
+        ctx.arc(d.x, d.y, d.s * dpr * (9.5 / d.z), 0, 6.283);
         ctx.fill();
       });
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -4987,84 +4979,149 @@ window.addEventListener('DOMContentLoaded', () => {
         const k = shade(f.n);
         if (f.kind === 'cube') {
           poly(f.pts);
-          ctx.fillStyle = rgb(pal.seal, k * (f.label < 0 ? 0.82 : 1));
+          // 寿山石朱砂基色，富有深沉的金石温润感
+          ctx.fillStyle = rgb(pal.seal, k * (f.label < 0 ? 0.8 : 0.96));
           ctx.fill();
-          ctx.strokeStyle = rgb(pal.seal, 0.6, 0.6); ctx.lineWidth = 1 * dpr; ctx.stroke();
+          // 极细石质棱角微光
+          ctx.strokeStyle = rgb(pal.seal, k * 1.12, 0.45);
+          ctx.lineWidth = 0.75 * dpr;
+          ctx.stroke();
+
           if (f.label >= 0) {
             mapTo(f.pts[0], f.pts[1], f.pts[3], 100, 100);
-            ctx.strokeStyle = 'rgba(255,248,235,0.55)'; ctx.lineWidth = 3;
+            
+            // 汉印双重规制边框（外粗内细）
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.78)';
+            ctx.lineWidth = 2.4;
             ctx.strokeRect(9, 9, 82, 82);
-            ctx.fillStyle = 'rgba(255,248,235,0.95)';
-            ctx.font = '600 58px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.42)';
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(13.5, 13.5, 73, 73);
+
+            // 四角古拙断金切角
+            ctx.fillStyle = 'rgba(255, 248, 238, 0.65)';
+            ctx.fillRect(8, 8, 3, 3);
+            ctx.fillRect(89, 8, 3, 3);
+            ctx.fillRect(8, 89, 3, 3);
+            ctx.fillRect(89, 89, 3, 3);
+
+            // 印文字体雕刻凹陷阴影（微浮雕感）
+            ctx.fillStyle = 'rgba(50, 10, 10, 0.45)';
+            ctx.font = '600 52px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(SEAL_FACES[f.label], 50, 54);
+            ctx.fillText(SEAL_FACES[f.label], 51, 53.5);
+
+            // 印面阳文纯正象牙金石白
+            ctx.fillStyle = 'rgba(255, 249, 242, 0.96)';
+            ctx.fillText(SEAL_FACES[f.label], 50, 52);
           }
         } else {
           const hl = f.i === hover;
           poly(f.pts);
-          ctx.shadowColor = 'rgba(0,0,0,' + (pal.dark ? 0.5 : 0.12) + ')';
-          ctx.shadowBlur = (hl ? 26 : 14) * dpr; ctx.shadowOffsetY = 6 * dpr;
-          ctx.fillStyle = rgb(pal.paper, f.front ? k : k * 0.9);
+          // 悬浮纸张立体柔和漫反射阴影
+          ctx.shadowColor = 'rgba(0,0,0,' + (pal.dark ? (hl ? 0.42 : 0.24) : (hl ? 0.12 : 0.06)) + ')';
+          ctx.shadowBlur = (hl ? 20 : 11) * dpr;
+          ctx.shadowOffsetY = (hl ? 6 : 3.5) * dpr;
+          ctx.fillStyle = rgb(pal.paper, f.front ? k : k * 0.94);
           ctx.fill();
           ctx.shadowColor = 'transparent';
-          ctx.strokeStyle = hl ? rgb(pal.seal, 1, 0.8) : rgb(pal.ink, 1, 0.12);
-          ctx.lineWidth = (hl ? 1.6 : 1) * dpr; ctx.stroke();
+
+          // 纸张边缘：极精工的 0.65px 细微光切线
+          ctx.strokeStyle = hl ? rgb(pal.seal, 1, 0.8) : rgb(pal.ink, 1, pal.dark ? 0.16 : 0.08);
+          ctx.lineWidth = (hl ? 1.2 : 0.65) * dpr;
+          ctx.stroke();
+
           const s = SHEETS[f.i];
           if (f.front) {
             mapTo(f.pts[0], f.pts[1], f.pts[3], 124, 164);
 
-            // 1. 竹尾特种纸漫反射流光质感 (Takeo Specular Sheen)
-            const ang = (f.i / SHEETS.length) * Math.PI * 2 + t * 0.12;
-            const sheenGrad = ctx.createLinearGradient(0, 0, 124, 164);
-            const sheenPos = (Math.sin(ang + t * 0.45) + 1) * 0.5;
-            sheenGrad.addColorStop(Math.max(0, sheenPos - 0.28), 'rgba(255,255,255,0)');
-            sheenGrad.addColorStop(sheenPos, pal.dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.28)');
-            sheenGrad.addColorStop(Math.min(1, sheenPos + 0.28), 'rgba(255,255,255,0)');
-            ctx.fillStyle = sheenGrad;
+            // 1. 竹尾特种棉纸自然漫射光（极轻微垂直微沉，剔除刺眼滑动反光）
+            const diffuse = ctx.createLinearGradient(0, 0, 0, 164);
+            diffuse.addColorStop(0, pal.dark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.4)');
+            diffuse.addColorStop(1, pal.dark ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.02)');
+            ctx.fillStyle = diffuse;
             ctx.fillRect(0, 0, 124, 164);
 
-            // 2. 纸张右上角古典书籍折角 (Takeo Paper Dog-Ear Fold)
-            const foldW = 20;
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(124 - foldW, 0);
-            ctx.lineTo(124 - foldW, foldW);
-            ctx.lineTo(124, foldW);
-            ctx.closePath();
-            ctx.fillStyle = pal.dark ? 'rgba(56, 52, 48, 0.95)' : 'rgba(235, 230, 218, 0.95)';
-            ctx.fill();
-            ctx.strokeStyle = rgb(pal.seal, 1, 0.3);
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-            ctx.restore();
-
-            // 3. 内衬装裱细线
-            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.08 : 0.05);
+            // 2. 精品典籍装帧：内外双重极细装裱墨线
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.12 : 0.06);
             ctx.lineWidth = 0.6;
             ctx.strokeRect(6, 6, 112, 152);
 
-            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-            ctx.fillStyle = rgb(pal.seal, 1, 0.92);
-            ctx.font = '600 13px ui-monospace,Menlo,Consolas,monospace';
-            ctx.fillText(s.num, 14, 26);
-            ctx.fillStyle = rgb(pal.ink, 1, 0.92);
-            ctx.font = '600 30px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
-            ctx.fillText(s.title, 14, 72);
-            ctx.fillStyle = rgb(pal.muted, 1, 0.9);
-            ctx.font = '11px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
-            ctx.fillText(s.desc, 14, 96);
-            ctx.strokeStyle = rgb(pal.ink, 1, 0.1); ctx.lineWidth = 1;
-            for (let l = 0; l < 3; l++) { ctx.beginPath(); ctx.moveTo(14, 118 + l * 11); ctx.lineTo(110 - l * 18, 118 + l * 11); ctx.stroke(); }
-            
-            // 朱砂印鉴微标
-            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.95 : 0.65);
-            ctx.fillRect(94, 134, 18, 18);
-            ctx.fillStyle = '#fff9f0';
-            ctx.font = '600 10px serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('印', 103, 144);
+            // 顶部章节标牌 (NO. 01 / 02 / 03 / 04)
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillStyle = rgb(pal.seal, 1, 0.88);
+            ctx.font = '600 11px ui-monospace,Menlo,Consolas,monospace';
+            ctx.fillText(s.num, 14, 22);
+
+            // 顶部右侧天圆地方微印徽记
+            ctx.fillStyle = rgb(pal.ink, 1, pal.dark ? 0.2 : 0.14);
+            ctx.beginPath();
+            ctx.arc(106, 22, 2.2, 0, 6.283);
+            ctx.fill();
+            ctx.strokeStyle = rgb(pal.seal, 1, 0.35);
+            ctx.lineWidth = 0.8;
+            ctx.strokeRect(96, 19.5, 5, 5);
+
+            // 顶部横隔线（极细精致）
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.1 : 0.07);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(14, 32);
+            ctx.lineTo(110, 32);
+            ctx.stroke();
+
+            // 3. 核心大标题：沉穆有力的典雅宋体
+            ctx.fillStyle = rgb(pal.ink, 1, 0.94);
+            ctx.font = '600 28px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
+            ctx.fillText(s.title, 14, 66);
+
+            // 4. 副标题说明文字：疏朗优雅
+            ctx.fillStyle = rgb(pal.muted, 1, 0.88);
+            ctx.font = '10.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+            ctx.fillText(s.desc, 14, 88);
+
+            // 5. 底部版心防伪细纹（现代书籍装帧感，计白当黑）
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.08 : 0.05);
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(14, 116);
+            ctx.lineTo(84, 116);
+            ctx.stroke();
+
+            // 典籍装帧微印
+            ctx.fillStyle = rgb(pal.muted, 1, 0.45);
+            ctx.font = '500 7px ui-monospace,Menlo,Consolas,monospace';
+            ctx.fillText('FOLIO / ATELIER', 14, 126);
+
+            // 6. 右下角：高定朱白文小雅印（矢量几何回纹，告别糊成一团的模糊汉字）
+            ctx.save();
+            ctx.translate(94, 134);
+            // 印章朱砂底框 (16x16)
+            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.96 : 0.82);
+            ctx.fillRect(0, 0, 16, 16);
+            // 极细微内框
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.85)';
+            ctx.lineWidth = 0.7;
+            ctx.strokeRect(1.8, 1.8, 12.4, 12.4);
+            // 内部小篆印纹（规整的朱白文回形金石印痕）
+            ctx.fillStyle = 'rgba(255, 248, 238, 0.92)';
+            ctx.fillRect(4.2, 4.2, 3.2, 3.2);
+            ctx.fillRect(8.6, 4.2, 3.2, 3.2);
+            ctx.fillRect(4.2, 8.6, 3.2, 3.2);
+            ctx.fillRect(8.6, 8.6, 3.2, 3.2);
+            ctx.restore();
 
             sheetPolys.push({ i: f.i, pts: f.pts });
+          } else {
+            // 翻转背面：精致的竹尾水印留白
+            mapTo(f.pts[0], f.pts[1], f.pts[3], 124, 164);
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.06 : 0.035);
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(10, 10, 104, 144);
+            ctx.fillStyle = rgb(pal.seal, 1, pal.dark ? 0.12 : 0.06);
+            ctx.beginPath();
+            ctx.arc(62, 82, 6, 0, 6.283);
+            ctx.fill();
           }
         }
       });
@@ -5518,20 +5575,25 @@ window.addEventListener('DOMContentLoaded', () => {
         if (charIdx <= 0) {
           isDeleting = false;
           pIdx = (pIdx + 1) % heroPhrases.length;
-          timer = setTimeout(tick, 380);
+          timer = setTimeout(tick, 400);
           return;
         }
-        timer = setTimeout(tick, 22);
+        timer = setTimeout(tick, 18);
       } else {
         charIdx++;
         renderInkChars(currentPhrase, charIdx, true);
         if (charIdx >= currentPhrase.length) {
           isDeleting = true;
-          timer = setTimeout(tick, 4200); // 完整句停驻 4.2 秒
+          timer = setTimeout(tick, 4500); // 完整句停驻 4.5 秒供从容品读
           return;
         }
         var lastChar = currentPhrase[charIdx - 1];
-        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。' || lastChar === '、') ? 220 : (lastChar === '：' || lastChar === ' ') ? 160 : 56;
+        // 毛笔书写呼吸律动：标点处顿笔沉思，行笔时微小有机自然起伏
+        var naturalJitter = Math.floor(Math.random() * 22) - 10;
+        var delay = (lastChar === '，' || lastChar === '。' || lastChar === '！') ? 340 :
+                    (lastChar === '·' || lastChar === '、') ? 220 :
+                    (lastChar === '：' || lastChar === ' ') ? 180 :
+                    Math.max(38, 62 + naturalJitter);
         timer = setTimeout(tick, delay);
       }
     }
