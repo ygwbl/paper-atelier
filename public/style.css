@@ -8943,3 +8943,318 @@ html { scroll-behavior:smooth; }
   animation: inkBloom 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+
+
+/* ==========================================================================
+   v51: 东方素纸灵动信笺与文房底栏 (Atelier Ribbon) 彻底消灭空白
+   ========================================================================== */
+.guestbook-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 8px;
+  padding: 1.15rem 1.25rem 0.95rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  position: relative;
+}
+
+.guestbook-form:focus-within {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(184, 59, 59, 0.08);
+}
+
+.form-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.paper-input, .paper-textarea, .paper-select {
+  background: var(--bg-paper);
+  border: 1px solid var(--border-line);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text-title);
+  outline: none;
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, background-color 0.28s ease;
+}
+
+.paper-input:focus, .paper-textarea:focus, .paper-select:focus {
+  border-color: rgba(184, 59, 59, 0.75) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(184, 59, 59, 0.18), 0 4px 14px rgba(184, 59, 59, 0.09) !important;
+}
+
+.input-author {
+  flex: 0 0 148px;
+  min-width: 130px;
+}
+
+.input-content {
+  flex: 1;
+  min-width: 220px;
+}
+
+/* 留墨按钮飞燕动效 */
+#btn-submit-msg {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--text-title);
+  color: #ffffff;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#btn-submit-msg svg.btn-plane {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#btn-submit-msg:hover {
+  background: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+#btn-submit-msg:hover svg.btn-plane {
+  transform: translate(2px, -2px) rotate(-8deg);
+}
+
+@keyframes flyAway {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  35% { transform: translate(-3px, 3px) scale(0.9) rotate(-15deg); opacity: 0.9; }
+  100% { transform: translate(36px, -28px) scale(0.3) rotate(25deg); opacity: 0; }
+}
+
+#btn-submit-msg.submitting {
+  pointer-events: none;
+  background: #44413e !important;
+  color: #dedad4 !important;
+  animation: inkPulse 1.2s infinite ease-in-out;
+}
+
+#btn-submit-msg.submitting svg.btn-plane {
+  animation: flyAway 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes inkPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(184, 59, 59, 0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(184, 59, 59, 0); }
+}
+
+/* --------------------------------------------------------------------------
+   文房底栏 (Atelier Ribbon) 彻底消灭空白
+   -------------------------------------------------------------------------- */
+.guestbook-bottom-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border-subtle, rgba(0, 0, 0, 0.06));
+  flex-wrap: wrap;
+}
+
+/* 心境印 (金石微印胶囊) */
+.mood-seal-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mood-seal-label {
+  font-family: var(--font-serif);
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  margin-right: 0.15rem;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.mood-seal {
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--border-line);
+  border-radius: 4px;
+  background: var(--bg-paper);
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  line-height: 1;
+  position: relative;
+}
+
+.mood-seal:hover {
+  border-color: rgba(184, 59, 59, 0.6);
+  color: var(--brand-seal, #b83b3b);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(184, 59, 59, 0.15);
+}
+
+.mood-seal.active {
+  background: var(--brand-seal, #b83b3b);
+  border-color: var(--brand-seal, #b83b3b);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(184, 59, 59, 0.32);
+  transform: scale(1.05);
+}
+
+/* 金石盖印动效 */
+@keyframes sealStamp {
+  0% { transform: scale(1); }
+  35% { transform: scale(0.86) translateY(2px); }
+  65% { transform: scale(1.15) translateY(-1px); }
+  100% { transform: scale(1.05) translateY(0); }
+}
+
+.mood-seal.stamp-anim {
+  animation: sealStamp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 水墨涟漪粒子 */
+.mood-seal .ink-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(184, 59, 59, 0.45);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: rippleOut 0.5s ease-out forwards;
+}
+
+@keyframes rippleOut {
+  0% { width: 6px; height: 6px; opacity: 0.9; }
+  100% { width: 44px; height: 44px; opacity: 0; }
+}
+
+/* 中间流光诗意心境引签 */
+.mood-poetic-stream {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 180px;
+  opacity: 0.95;
+}
+
+.mood-quote-mark {
+  color: var(--brand-seal, #b83b3b);
+  font-weight: bold;
+  opacity: 0.85;
+}
+
+.mood-poetic-text {
+  margin: 0 0.15rem;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  display: inline-block;
+}
+
+.mood-poetic-text.stream-fade {
+  opacity: 0;
+  transform: translateY(3px);
+}
+
+.mood-ink-cursor {
+  color: var(--brand-seal, #b83b3b);
+  font-weight: 300;
+  margin-left: 2px;
+  animation: cursorBlink 1.1s infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+/* 右侧状态与快捷键 */
+.guestbook-right-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.char-count-pill {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.74rem;
+  color: var(--text-faint, #a8a49e);
+  background: var(--bg-paper);
+  border: 1px solid var(--border-line);
+  border-radius: 10px;
+  padding: 0.1rem 0.5rem;
+  transition: all 0.25s ease;
+}
+
+.char-count-pill.warn {
+  color: #b83b3b;
+  border-color: rgba(184, 59, 59, 0.5);
+  font-weight: 600;
+}
+
+.kbd-shortcut-hint {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.kbd-shortcut-hint kbd {
+  font-family: var(--font-mono, monospace);
+  background: var(--bg-paper);
+  border: 1px solid var(--border-line);
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+  font-size: 0.68rem;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+  .guestbook-bottom-ribbon {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+  .mood-poetic-stream {
+    justify-content: flex-start;
+    padding: 0;
+    width: 100%;
+  }
+  .guestbook-right-status {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+}
+

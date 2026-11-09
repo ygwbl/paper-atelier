@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script>
     (function() {
-      var RELEASE_VER = '20261109_v50';
+      var RELEASE_VER = '20261109_v51';
       try {
         var current = localStorage.getItem('atelier_ver');
         if (current !== RELEASE_VER) {
@@ -41,7 +41,7 @@
   <title>纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/logo.png?v=20261109_v50">
+  <link rel="apple-touch-icon" href="/logo.png?v=20261109_v51">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#fcfbf9">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -67,7 +67,7 @@
   <meta property="og:title" content="纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验">
   <meta property="og:description" content="「纸境工坊」是独立工程师 Sxltx 的数字自留地。秉持东方素纸美学与现代纯原生零依赖工程哲学，记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。">
   <meta property="og:url" content="https://hlat.top/">
-  <meta property="og:image" content="https://hlat.top/og/default.png?v=20261109_v50">
+  <meta property="og:image" content="https://hlat.top/og/default.png?v=20261109_v51">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="纸境工坊 · 东方素纸质感与纯原生Web工程实验">
@@ -77,9 +77,9 @@
   <meta name="twitter:creator" content="@Sxltx_">
   <meta name="twitter:title" content="纸境工坊 · Sxltx | 独立工程师的思想自留地与纯原生Web实验">
   <meta name="twitter:description" content="「纸境工坊」是独立工程师 Sxltx 的数字自留地。秉持东方素纸美学与现代纯原生零依赖工程哲学，记录边缘微机双活自治、分布式缓存调优、前端交互设计与全栈深度实战手记。">
-  <meta name="twitter:image" content="https://hlat.top/og/default.png?v=20261109_v50">
+  <meta name="twitter:image" content="https://hlat.top/og/default.png?v=20261109_v51">
   <meta name="twitter:image:alt" content="纸境工坊 · 东方素纸质感与纯原生Web工程实验">
-  <link rel="preload" as="image" href="/logo.png?v=20261109_v50" fetchpriority="high">
+  <link rel="preload" as="image" href="/logo.png?v=20261109_v51" fetchpriority="high">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -122,7 +122,7 @@
     ]
   }
   </script>
-  <link rel="stylesheet" href="/style.css?v=20261109_v50">
+  <link rel="stylesheet" href="/style.css?v=20261109_v51">
 
   <style id="head-typography-override">
     .featured-summary,
@@ -202,7 +202,7 @@
   <header class="nav-dock-container">
     <nav class="nav-dock" aria-label="主导航">
       <a href="#" class="nav-brand" aria-label="返回顶部">
-        <img src="/logo.png?v=20261109_v50" alt="Sxltx" class="nav-brand-logo" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='/favicon.png';">
+        <img src="/logo.png?v=20261109_v51" alt="Sxltx" class="nav-brand-logo" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='/favicon.png';">
         <span class="brand-serif">Sxltx</span>
         <span class="brand-sep" aria-hidden="true">/</span>
         <span class="brand-sub">纸境工坊</span>
@@ -282,7 +282,7 @@
 
       <div class="hero-brand-row">
         <div class="hero-brand-avatar" title="Sxltx · 柯基与爱心徽章">
-          <img src="/logo.png?v=20261109_v50" alt="Sxltx" class="hero-avatar-img" decoding="async" onerror="this.onerror=null;this.src='/favicon.png';">
+          <img src="/logo.png?v=20261109_v51" alt="Sxltx" class="hero-avatar-img" decoding="async" onerror="this.onerror=null;this.src='/favicon.png';">
         </div>
         <div class="hero-status-pill">
           <span class="pulse-indicator">
@@ -593,30 +593,43 @@
         <div class="v35-q-echoes" id="v35-q-echoes-list" hidden></div>
 
         <!-- Comment Input Box -->
+                <!-- Comment Input Box (Atelier Ribbon · 东方素纸灵动信笺) -->
         <form class="guestbook-form" id="guestbook-form">
           <div class="form-inputs-row">
             <input type="text" id="msg-author" placeholder="阁下雅称 (选填)" maxlength="30" class="paper-input input-author">
             <input type="text" id="msg-content" placeholder="写下一缕墨香或想法..." maxlength="300" required class="paper-input input-content">
-            <button type="submit" class="paper-btn btn-primary" id="btn-submit-msg">
-              <span>留墨</span>
-              <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button type="submit" class="paper-btn btn-primary" id="btn-submit-msg" title="按 Ctrl+Enter 亦可极速留墨">
+              <span class="btn-text">留墨</span>
+              <svg class="svg-icon btn-plane" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
             </button>
           </div>
-          <!-- v26 · 此刻心境印：一枚小印，让留墨带上情绪 -->
-          <div class="mood-seal-row" id="mood-seal-row" role="group" aria-label="选择此刻心境">
-            <span class="mood-seal-label">此刻心境</span>
-            <button type="button" class="mood-seal active" data-mood="静" aria-pressed="true">静</button>
-            <button type="button" class="mood-seal" data-mood="思" aria-pressed="false">思</button>
-            <button type="button" class="mood-seal" data-mood="喜" aria-pressed="false">喜</button>
-            <button type="button" class="mood-seal" data-mood="问" aria-pressed="false">问</button>
-            
-          </div>
-          <div class="guestbook-hint-row">
-            
-            <span id="msg-char-count" class="char-count-hint">0 / 300</span>
+          
+          <!-- 文墨心境底栏 (Atelier Ribbon)：彻底消灭空白，流光诗意心境签 -->
+          <div class="guestbook-bottom-ribbon">
+            <div class="mood-seal-row" id="mood-seal-row" role="group" aria-label="选择此刻心境">
+              <span class="mood-seal-label">此刻心境</span>
+              <button type="button" class="mood-seal active" data-mood="静" aria-pressed="true" title="静 · 会心一阅">静</button>
+              <button type="button" class="mood-seal" data-mood="思" aria-pressed="false" title="思 · 沉潜格致">思</button>
+              <button type="button" class="mood-seal" data-mood="喜" aria-pressed="false" title="喜 · 相逢意气">喜</button>
+              <button type="button" class="mood-seal" data-mood="问" aria-pressed="false" title="问 · 疑义相析">问</button>
+            </div>
+
+            <!-- 动态流光心境引签（填补中间空白，毛笔行云流水打字感） -->
+            <div class="mood-poetic-stream" id="mood-poetic-stream" aria-live="polite">
+              <span class="mood-quote-mark" aria-hidden="true">「</span>
+              <span class="mood-poetic-text" id="mood-poetic-text">水静极则形象明，心静极则智慧生</span>
+              <span class="mood-quote-mark" aria-hidden="true">」</span>
+              <span class="mood-ink-cursor" aria-hidden="true">|</span>
+            </div>
+
+            <!-- 右侧快捷键与字数胶囊 -->
+            <div class="guestbook-right-status">
+              <span id="msg-char-count" class="char-count-pill" title="字数统计">0 / 300</span>
+              <span class="kbd-shortcut-hint" title="按快捷键可极速留墨"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+            </div>
           </div>
         </form>
 
@@ -1145,7 +1158,7 @@
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="/app.js?v=20261109_v50"></script>
+  <script src="/app.js?v=20261109_v51"></script>
   <!-- Back to top floating button -->
   <button id="btn-back-to-top" class="back-to-top-btn" title="平滑返回顶部" aria-label="返回顶部">
     <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

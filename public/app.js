@@ -5815,3 +5815,129 @@ window.addEventListener('DOMContentLoaded', () => {
 
 })();
 /* ======================== v48 · 完 ======================== */
+
+// =========================================================================
+// v51: 东方素纸灵动信笺交互：心境涟漪、流光诗意引签、打字机占位符与快捷键
+// =========================================================================
+(function initAtelierRibbonAndAnimations() {
+  const POETIC_ECHOES = {
+    '静': '水静极则形象明，心静极则智慧生',
+    '思': '格物致知，探寻内核与架构的底层大道',
+    '喜': '相逢意气，见字如面，忽闻远客至',
+    '问': '奇文共疑析，疑义相与析，待工坊研磨回笔'
+  };
+
+  const INK_PROMPTS = [
+    '写下一缕墨香，或偶得的架构闪念...',
+    '探讨 Linux 内核、零拷贝与高性能 I/O 之道...',
+    '交流 LSM-Tree、存储引擎与边缘自治架构...',
+    '聊聊现代极简 Web、原生零依赖与东方素纸美学...',
+    '留下萍水相逢的问候，工坊即刻为您研磨回笔...'
+  ];
+
+  // 1. 心境印章金石钤印动效与水墨涟漪
+  const moodRow = document.getElementById('mood-seal-row');
+  const poeticText = document.getElementById('mood-poetic-text');
+
+  if (moodRow) {
+    moodRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mood-seal');
+      if (!btn) return;
+      const mood = btn.dataset.mood;
+      
+      // 添加印章盖压与涟漪动效
+      btn.classList.remove('stamp-anim');
+      void btn.offsetWidth; // 触发 reflow 重置动画
+      btn.classList.add('stamp-anim');
+
+      const ripple = document.createElement('span');
+      ripple.className = 'ink-ripple';
+      btn.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 550);
+
+      // 更新中间流光诗意签
+      if (poeticText && POETIC_ECHOES[mood]) {
+        poeticText.classList.add('stream-fade');
+        setTimeout(() => {
+          poeticText.textContent = POETIC_ECHOES[mood];
+          poeticText.classList.remove('stream-fade');
+        }, 220);
+      }
+    });
+  }
+
+  // 2. 输入框智能文墨打字机占位符 (Typewriter Placeholder)
+  const contentInput = document.getElementById('msg-content');
+  if (contentInput) {
+    let promptIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let typewriterPaused = false;
+    let typewriterTimer = null;
+
+    function tickTypewriter() {
+      if (typewriterPaused || document.activeElement === contentInput || contentInput.value.length > 0) {
+        typewriterTimer = setTimeout(tickTypewriter, 500);
+        return;
+      }
+
+      const currentSentence = INK_PROMPTS[promptIndex % INK_PROMPTS.length];
+      if (isDeleting) {
+        charIndex--;
+        contentInput.placeholder = currentSentence.substring(0, charIndex);
+        if (charIndex <= 0) {
+          isDeleting = false;
+          promptIndex++;
+          typewriterTimer = setTimeout(tickTypewriter, 500);
+          return;
+        }
+        typewriterTimer = setTimeout(tickTypewriter, 35);
+      } else {
+        charIndex++;
+        contentInput.placeholder = currentSentence.substring(0, charIndex);
+        if (charIndex >= currentSentence.length) {
+          isDeleting = true;
+          typewriterTimer = setTimeout(tickTypewriter, 3600); // 完整句停留 3.6 秒供阅读
+          return;
+        }
+        typewriterTimer = setTimeout(tickTypewriter, 75);
+      }
+    }
+
+    contentInput.addEventListener('focus', () => { typewriterPaused = true; });
+    contentInput.addEventListener('blur', () => {
+      if (!contentInput.value.trim()) {
+        typewriterPaused = false;
+      }
+    });
+
+    // 延时 800ms 开启打字机
+    setTimeout(tickTypewriter, 800);
+
+    // 3. Ctrl+Enter / Cmd+Enter 极速留墨
+    contentInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        const form = document.getElementById('guestbook-form');
+        if (form) {
+          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+    });
+  }
+
+  // 4. 字数统计胶囊实时更新
+  const charPill = document.getElementById('msg-char-count');
+  if (contentInput && charPill) {
+    contentInput.addEventListener('input', () => {
+      const len = contentInput.value.length;
+      charPill.textContent = `${len} / 300`;
+      if (len > 280) {
+        charPill.classList.add('warn');
+      } else {
+        charPill.classList.remove('warn');
+      }
+    });
+  }
+})();
+
