@@ -9367,3 +9367,185 @@ html { scroll-behavior:smooth; }
   }
 }
 
+
+
+/* ==========================================================================
+   v57 · 东方素纸文墨打字机系统与 3D 舞台质感增强 (Oriental Calligraphy & Stage Polish)
+   ========================================================================== */
+
+/* 1. Hero 顶部文墨笺微容器 */
+.hero-typewriter-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.38rem 0.85rem 0.38rem 0.5rem;
+  background: color-mix(in srgb, var(--bg-card) 85%, var(--bg-subtle) 15%);
+  border: 1px solid color-mix(in srgb, var(--border-line) 75%, var(--brand-seal) 25%);
+  border-radius: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+  margin-top: 0.4rem;
+  margin-bottom: 0.75rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s var(--ease-spring);
+  position: relative;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+.hero-typewriter-banner:hover {
+  border-color: color-mix(in srgb, var(--brand-seal) 45%, var(--border-line) 55%);
+  box-shadow: 0 4px 18px rgba(184, 59, 59, 0.09), 0 2px 6px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.typewriter-seal-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0.16rem 0.45rem;
+  background: var(--brand-seal, #a8322b);
+  color: #fff8f0;
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(168, 50, 43, 0.25);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.typewriter-content-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  min-height: 1.5rem;
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  color: var(--text-title);
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 水墨晕开字符动画 (Ink Diffusion Bleed) */
+.ink-char {
+  display: inline-block;
+  opacity: 1;
+}
+
+.ink-char.ink-fresh {
+  animation: inkBleedAnim 0.35s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+}
+
+@keyframes inkBleedAnim {
+  0% {
+    opacity: 0;
+    filter: blur(3.5px);
+    transform: translateY(-2px) scale(0.92);
+  }
+  55% {
+    opacity: 0.85;
+    filter: blur(0.8px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 东方朱砂落水墨滴光标 (Vermilion Ink Brush Cursor) */
+.hero-typewriter-banner .typewriter-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand-seal, #a8322b);
+  box-shadow: 0 0 7px rgba(184, 59, 59, 0.65), 0 0 1px rgba(184, 59, 59, 0.9);
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: inkCursorBlink 1.1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+@keyframes inkCursorBlink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+
+/* 换一笺微按钮 */
+.typewriter-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.16rem 0.42rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  user-select: none;
+  flex-shrink: 0;
+  opacity: 0.65;
+}
+
+.typewriter-refresh-btn:hover {
+  opacity: 1;
+  color: var(--brand-seal);
+  background: rgba(184, 59, 59, 0.08);
+}
+
+.typewriter-refresh-btn .refresh-icon {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.typewriter-refresh-btn:hover .refresh-icon {
+  transform: rotate(180deg);
+}
+
+/* 2. 3D 舞台质感增强 */
+.v39-stage {
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.v39-stage:hover {
+  border-color: color-mix(in srgb, var(--border-line) 75%, var(--brand-seal) 25%);
+  box-shadow: var(--paper-edge, none), 0 6px 24px rgba(0, 0, 0, 0.04);
+}
+
+.v39-tip {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 640px) {
+  .hero-typewriter-banner {
+    padding: 0.35rem 0.65rem;
+    gap: 0.45rem;
+    border-radius: 18px;
+    width: 100%;
+  }
+  .typewriter-content-wrap {
+    font-size: 0.86rem;
+  }
+  .refresh-text {
+    display: none;
+  }
+}

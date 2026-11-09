@@ -4852,12 +4852,22 @@ window.addEventListener('DOMContentLoaded', () => {
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
 
-    // 墨点粒子：球壳上随机分布
+    // v57: 东方金石水墨与古金箔浮尘微粒 (三维景深层级分布)
     const dots = [];
-    for (let i = 0; i < 90; i++) {
-      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 3.2 + Math.random() * 1.6;
+    for (let i = 0; i < 110; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.8 + Math.random() * 2.2;
       const s = Math.sqrt(1 - u * u);
-      dots.push({ x: r * s * Math.cos(th), y: u * r * 0.55, z: r * s * Math.sin(th), s: 0.6 + Math.random() * 1.4, ph: Math.random() * 6.28 });
+      const rnd = Math.random();
+      const kind = rnd < 0.6 ? 0 : (rnd < 0.85 ? 1 : 2); // 0=墨尘(60%), 1=古金箔(25%), 2=赤砂微星(15%)
+      dots.push({
+        x: r * s * Math.cos(th),
+        y: u * r * 0.62,
+        z: r * s * Math.sin(th),
+        s: (kind === 0 ? 0.65 : 1.15) + Math.random() * 1.4,
+        ph: Math.random() * 6.28,
+        kind: kind,
+        twinkle: 1.6 + Math.random() * 1.8
+      });
     }
 
     let yaw = 0.35, pitch = -0.22, vYaw = 0, dragging = false, lastX = 0, lastY = 0, moved = 0;
@@ -4947,13 +4957,26 @@ window.addEventListener('DOMContentLoaded', () => {
 
       faces.sort((a, b) => b.z - a.z);
 
-      // 远处墨点
-      const dp = dots.map(d => { const p = project(rotY([d.x, d.y + Math.sin(t + d.ph) * 0.12, d.z], t * 0.05)); p.s = d.s; return p; });
-      const drawDots = (far) => dp.forEach(p => {
-        if ((p.z > 9.5) !== far) return;
-        const a = Math.max(0.05, Math.min(0.5, 1.6 - p.z / 9));
-        ctx.fillStyle = rgb(pal.ink, 1, a * (pal.dark ? 0.6 : 0.35));
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.s * dpr * (10 / p.z), 0, 6.283); ctx.fill();
+      // 远处墨点与金箔纸屑微粒
+      const dp = dots.map(d => {
+        const p = project(rotY([d.x, d.y + Math.sin(t + d.ph) * 0.12, d.z], t * 0.05));
+        p.s = d.s; p.kind = d.kind; p.ph = d.ph; p.twinkle = d.twinkle;
+        return p;
+      });
+      const drawDots = (far) => dp.forEach(d => {
+        if ((d.z > 9.5) !== far) return;
+        const distA = Math.max(0.06, Math.min(0.75, 1.65 - d.z / 9.2));
+        const tw = 0.72 + 0.28 * Math.sin(t * d.twinkle + d.ph);
+        if (d.kind === 1) { // 古法金箔 (暖金微光闪烁)
+          ctx.fillStyle = `rgba(218, 175, 55, ${(distA * tw * (pal.dark ? 0.75 : 0.55)).toFixed(3)})`;
+        } else if (d.kind === 2) { // 赤砂微星 (朱砂红星芒)
+          ctx.fillStyle = `rgba(184, 59, 59, ${(distA * tw * 0.65).toFixed(3)})`;
+        } else { // 传统淡墨微尘
+          ctx.fillStyle = rgb(pal.ink, 1, distA * (pal.dark ? 0.55 : 0.32));
+        }
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.s * dpr * (9.8 / d.z), 0, 6.283);
+        ctx.fill();
       });
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       drawDots(true);
@@ -4989,11 +5012,42 @@ window.addEventListener('DOMContentLoaded', () => {
           const s = SHEETS[f.i];
           if (f.front) {
             mapTo(f.pts[0], f.pts[1], f.pts[3], 124, 164);
+
+            // 1. 竹尾特种纸漫反射流光质感 (Takeo Specular Sheen)
+            const ang = (f.i / SHEETS.length) * Math.PI * 2 + t * 0.12;
+            const sheenGrad = ctx.createLinearGradient(0, 0, 124, 164);
+            const sheenPos = (Math.sin(ang + t * 0.45) + 1) * 0.5;
+            sheenGrad.addColorStop(Math.max(0, sheenPos - 0.28), 'rgba(255,255,255,0)');
+            sheenGrad.addColorStop(sheenPos, pal.dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.28)');
+            sheenGrad.addColorStop(Math.min(1, sheenPos + 0.28), 'rgba(255,255,255,0)');
+            ctx.fillStyle = sheenGrad;
+            ctx.fillRect(0, 0, 124, 164);
+
+            // 2. 纸张右上角古典书籍折角 (Takeo Paper Dog-Ear Fold)
+            const foldW = 20;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(124 - foldW, 0);
+            ctx.lineTo(124 - foldW, foldW);
+            ctx.lineTo(124, foldW);
+            ctx.closePath();
+            ctx.fillStyle = pal.dark ? 'rgba(56, 52, 48, 0.95)' : 'rgba(235, 230, 218, 0.95)';
+            ctx.fill();
+            ctx.strokeStyle = rgb(pal.seal, 1, 0.3);
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+            ctx.restore();
+
+            // 3. 内衬装裱细线
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.08 : 0.05);
+            ctx.lineWidth = 0.6;
+            ctx.strokeRect(6, 6, 112, 152);
+
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-            ctx.fillStyle = rgb(pal.seal, 1, 0.9);
+            ctx.fillStyle = rgb(pal.seal, 1, 0.92);
             ctx.font = '600 13px ui-monospace,Menlo,Consolas,monospace';
             ctx.fillText(s.num, 14, 26);
-            ctx.fillStyle = rgb(pal.ink, 1, 0.9);
+            ctx.fillStyle = rgb(pal.ink, 1, 0.92);
             ctx.font = '600 30px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
             ctx.fillText(s.title, 14, 72);
             ctx.fillStyle = rgb(pal.muted, 1, 0.9);
@@ -5001,8 +5055,15 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(s.desc, 14, 96);
             ctx.strokeStyle = rgb(pal.ink, 1, 0.1); ctx.lineWidth = 1;
             for (let l = 0; l < 3; l++) { ctx.beginPath(); ctx.moveTo(14, 118 + l * 11); ctx.lineTo(110 - l * 18, 118 + l * 11); ctx.stroke(); }
-            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.95 : 0.55);
-            ctx.fillRect(96, 136, 16, 16);
+            
+            // 朱砂印鉴微标
+            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.95 : 0.65);
+            ctx.fillRect(94, 134, 18, 18);
+            ctx.fillStyle = '#fff9f0';
+            ctx.font = '600 10px serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText('印', 103, 144);
+
             sheetPolys.push({ i: f.i, pts: f.pts });
           }
         }
@@ -5358,13 +5419,15 @@ window.addEventListener('DOMContentLoaded', () => {
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // -------------------------------------------------------------------------
-  // 场景 1: Hero 顶部「文墨打字机」（开屏即打 + 朱砂光晕 + 悬浮静止）
+  // 场景 1: Hero 顶部「文墨打字机」（开屏即打 + 水墨晕开 + 朱砂微印 + 交互换笺）
   // -------------------------------------------------------------------------
   var heroPhrases = [
     "在微云之境，构筑自治的工程工作流与思想自留地。",
     "真正的零外部依赖 · 日本竹尾素纸的宁静阅读心境。",
     "探寻 Linux 内核、存储引擎与网络协议的底层之道。",
-    "让文字、代码与运行中的造物，在数字领地从容常驻。"
+    "让文字、代码与运行中的造物，在数字领地从容常驻。",
+    "水墨微润，代码清澈，在算法洪流中保留纯粹沉淀。",
+    "人机共生与独立自治：一位工匠对极简系统的求索实录。"
   ];
 
   window.updateHeroTypewriter = function (newPhrase) {
@@ -5377,14 +5440,17 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   function initHeroTypewriter() {
-    var subEl = document.getElementById('site-subtitle-display');
-    if (!subEl) return;
+    var bannerEl = document.getElementById('site-subtitle-display');
+    if (!bannerEl) return;
 
-    // 结构自愈：无论外部如何清空，自动恢复打字机容器
     var textEl = document.getElementById('hero-typewriter-text');
+    var refreshBtn = document.getElementById('hero-typewriter-refresh');
+
+    // 结构自愈：自动适配并恢复文墨打字机 Banner
     if (!textEl) {
-      subEl.innerHTML = '<span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true">|</span>';
+      bannerEl.innerHTML = '<div class="typewriter-seal-tag" aria-hidden="true"><span class="seal-glyph">墨</span><span class="seal-text">引</span></div><div class="typewriter-content-wrap"><span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true"></span></div><button type="button" class="typewriter-refresh-btn" id="hero-typewriter-refresh" title="点击换一笺" aria-label="换一笺"><svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg><span class="refresh-text">换一笺</span></button>';
       textEl = document.getElementById('hero-typewriter-text');
+      refreshBtn = document.getElementById('hero-typewriter-refresh');
     }
 
     if (reduceMotion) {
@@ -5398,14 +5464,45 @@ window.addEventListener('DOMContentLoaded', () => {
     var isPaused = false;
     var timer = null;
 
-    subEl.addEventListener('mouseenter', function () { isPaused = true; });
-    subEl.addEventListener('mouseleave', function () { isPaused = false; });
+    bannerEl.addEventListener('mouseenter', function () { isPaused = true; });
+    bannerEl.addEventListener('mouseleave', function () { isPaused = false; });
+
+    // 交互式“换一笺”
+    function nextPhrase() {
+      if (isDeleting) return;
+      isDeleting = true;
+      if (timer) clearTimeout(timer);
+      tick();
+    }
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        nextPhrase();
+      });
+    }
+    bannerEl.addEventListener('click', function(e) {
+      if (e.target && (e.target.closest('#hero-typewriter-refresh') || e.target.tagName === 'BUTTON')) return;
+      nextPhrase();
+    });
+
+    // 水墨逐字落笔晕染渲染器
+    function renderInkChars(phrase, count, isFresh) {
+      var frag = document.createDocumentFragment();
+      for (var i = 0; i < count; i++) {
+        var span = document.createElement('span');
+        span.className = 'ink-char' + (isFresh && i === count - 1 ? ' ink-fresh' : '');
+        span.textContent = phrase[i];
+        frag.appendChild(span);
+      }
+      textEl.innerHTML = '';
+      textEl.appendChild(frag);
+    }
 
     function tick() {
-      // 容错：若 textEl 被意外移出 DOM，重新寻找或重建
       if (!document.getElementById('hero-typewriter-text')) {
-        subEl.innerHTML = '<span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true">|</span>';
         textEl = document.getElementById('hero-typewriter-text');
+        if (!textEl) return;
       }
 
       if (isPaused) {
@@ -5417,34 +5514,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
       if (isDeleting) {
         charIdx--;
-        textEl.textContent = currentPhrase.slice(0, charIdx);
+        renderInkChars(currentPhrase, Math.max(0, charIdx), false);
         if (charIdx <= 0) {
           isDeleting = false;
           pIdx = (pIdx + 1) % heroPhrases.length;
           timer = setTimeout(tick, 380);
           return;
         }
-        timer = setTimeout(tick, 26);
+        timer = setTimeout(tick, 22);
       } else {
         charIdx++;
-        textEl.textContent = currentPhrase.slice(0, charIdx);
+        renderInkChars(currentPhrase, charIdx, true);
         if (charIdx >= currentPhrase.length) {
           isDeleting = true;
-          timer = setTimeout(tick, 3500);
+          timer = setTimeout(tick, 4200); // 完整句停驻 4.2 秒
           return;
         }
         var lastChar = currentPhrase[charIdx - 1];
-        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。' || lastChar === '、') ? 160 : 52;
+        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。' || lastChar === '、') ? 220 : (lastChar === '：' || lastChar === ' ') ? 160 : 56;
         timer = setTimeout(tick, delay);
       }
     }
 
-    // ★ 开屏立显：清空后立刻启动打字动效！
-    textEl.textContent = '';
+    // ★ 开屏立显
+    textEl.innerHTML = '';
     charIdx = 0;
     isDeleting = false;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(tick, 150);
+    timer = setTimeout(tick, 120);
   }
 
   // -------------------------------------------------------------------------
