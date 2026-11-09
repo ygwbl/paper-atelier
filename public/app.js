@@ -116,7 +116,11 @@ let editingArticleId = null;
 // Lightweight Markdown to HTML Parser
 function parseMarkdown(md) {
   if (!md) return '';
-  let html = md.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // 1. 深度安全剥离：阻断 script 脚本、敏感嵌入标签、内联 on* 事件 (如 onerror / onload)
+  let html = md
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<\/?(?:iframe|object|embed|form|input|button|base|meta|link|style)\b[^>]*>/gi, '')
+    .replace(/\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
 
   // 1. Normalize legacy or embedded HTML code blocks into markdown fences
   html = html.replace(/<p[^>]*>\s*<code\s+class="lang-([^"]+)">([\s\S]*?)<\/code>\s*<\/pre>/gi, (m, lang, code) => `\n\n\`\`\`${lang}\n${code.trim()}\n\`\`\`\n\n`);
@@ -206,7 +210,10 @@ function parseMarkdown(md) {
   });
 
   // 10. Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => {
+    const cleanUrl = /^(?:https?:\/\/|\/|#|mailto:)/i.test(url.trim()) ? url.trim() : '#';
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  });
 
   // 11. Paragraphs with strict exclusions
   html = html.split(/\n{2,}/).map(para => {

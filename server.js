@@ -6,6 +6,16 @@ const os = require("os");
 const zlib = require("zlib");
 const crypto = require("crypto");
 
+// ==============================================================================
+// v56 · 全局未捕获异常守护 (P0: 阻断任何突发运行时异常打崩 Node 进程，消除 DoS 隐患)
+// ==============================================================================
+process.on("uncaughtException", (err, origin) => {
+  console.error(`[CRITICAL UNCAUGHT EXCEPTION] [${origin}]:`, err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[CRITICAL UNHANDLED REJECTION]:", reason);
+});
+
 const PORT = process.env.PORT || 8080;
 const PUBLIC_DIR = path.join(__dirname, "public");
 const DATA_DIR = path.join(__dirname, "data");
@@ -244,16 +254,11 @@ function isTrustedPeer(peer) {
 // Extract Real Client IP (never trust forwarding headers from untrusted peers)
 
 // v54 · 后端全字段深度 XSS 净化与输入防御
+// v56 · 存储层清洗：过滤非法不可见控制字符，去除首尾空白（避免与前端渲染层 escapeHtml 产生双层转义）
 function sanitizeInput(str) {
   if (typeof str !== 'string') return '';
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/`/g, '&#x60;')
-    .replace(/\x00/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim();
 }
 
@@ -350,12 +355,38 @@ function detectAttackPayload(urlObj) {
 function getClientIP(req) {
   const peer = normalizeIP(req.socket.remoteAddress);
   if (isTrustedPeer(peer)) {
-    const heads = [req.headers["cf-connecting-ip"], req.headers["x-forwarded-for"], req.headers["x-real-ip"]];
-    for (const raw of heads) {
-      const ip = normalizeIP(raw);
-      if (ip && ip.length <= 45 && /^[0-9a-fA-F.:]+$/.test(ip)) {
-        req.atelierIPSource = "proxy-header";
-        return ip;
+    // 优先级 1: 腾讯云 EdgeOne 边缘注入真实客户端 IP（客户端伪造头会被 CDN 边缘剥离或覆盖）
+    const eoIp = normalizeIP(req.headers["eo-connecting-ip"]);
+    if (eoIp && eoIp.length <= 45 && /^[0-9a-fA-F.:]+$/.test(eoIp)) {
+      req.atelierIPSource = "eo-connecting-ip";
+      return eoIp;
+    }
+    // 优先级 2: Cloudflare 权威连接 IP
+    const cfIp = normalizeIP(req.headers["cf-connecting-ip"]);
+    if (cfIp && cfIp.length <= 45 && /^[0-9a-fA-F.:]+$/.test(cfIp)) {
+      req.atelierIPSource = "cf-connecting-ip";
+      return cfIp;
+    }
+    // 优先级 3: 反向代理（如 Nginx $remote_addr）直连注入的 X-Real-IP
+    const realIp = normalizeIP(req.headers["x-real-ip"]);
+    if (realIp && realIp.length <= 45 && /^[0-9a-fA-F.:]+$/.test(realIp)) {
+      req.atelierIPSource = "x-real-ip";
+      return realIp;
+    }
+    // 优先级 4: X-Forwarded-For 安全逆序提取（防客户端首部伪造）
+    const xff = req.headers["x-forwarded-for"];
+    if (xff) {
+      const parts = String(xff).split(",").map(s => normalizeIP(s)).filter(Boolean);
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const ip = parts[i];
+        if (ip && ip.length <= 45 && /^[0-9a-fA-F.:]+$/.test(ip) && !isPrivateIP(ip)) {
+          req.atelierIPSource = "xff-safe-tail";
+          return ip;
+        }
+      }
+      if (parts.length > 0 && parts[0].length <= 45 && /^[0-9a-fA-F.:]+$/.test(parts[0])) {
+        req.atelierIPSource = "xff-fallback";
+        return parts[0];
       }
     }
   }
@@ -879,7 +910,8 @@ function sendResponse(req, res, statusCode, contentType, body, isCacheable = fal
     "Cross-Origin-Resource-Policy": "same-origin",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https:; object-src 'none'; base-uri 'self'; frame-ancestors 'self';"
   };
 
   // 2. Strict Cache-Busting for HTML, API, RSS & Sitemap
@@ -1167,6 +1199,19 @@ function corsAllowedOrigin(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  try {
+    // Gate 0.1: 强制 HTTPS 301 重定向 (阻断明文降级与中间人传输风险)
+    const proto = String(req.headers["x-forwarded-proto"] || req.headers["eo-forwarded-proto"] || "").toLowerCase();
+    const host = req.headers.host || "";
+    if (proto === "http" && host && !host.startsWith("localhost") && !host.startsWith("127.0.0.1")) {
+      res.writeHead(301, {
+        "Location": "https://" + host + req.url,
+        "Connection": "close",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload"
+      });
+      res.end();
+      return;
+    }
   // Gate 0: 蜜罐黑名单即刻阻断 (0 耗费秒掐连接)
   const clientIP = getClientIP(req);
   if (isIpBlacklisted(clientIP)) {
@@ -1271,36 +1316,42 @@ const server = http.createServer(async (req, res) => {
     return sendJSON(req, res, 200, { authenticated: isAuthenticated(req) });
   }
 
-  // 2. Auth Login —— v37 三层限流 + scrypt 校验 + 旧哈希透明升级
+  // 2. Auth Login —— v56 IP 维度限流 + 正确密码直接放行解耦（杜绝外部恶意攻击反噬锁定管理员）
   if (pathname === "/api/auth/login" && method === "POST") {
     const ip = getClientIP(req);
 
-    // v37 · 账号级失败闸门：完全不依赖 IP，换 IP / 伪造 CF-Connecting-IP 也无法重置。
-    //         攻击者借伪造头绕过 per-IP 限流时，这里是最后一道硬闸。
-    const FAIL_WINDOW = 5 * 60 * 1000;
-    const failedBefore = (rateState.get("login:globalfail|*") || [])
-      .filter(t => Date.now() - t < FAIL_WINDOW);
-    if (failedBefore.length >= 8) {
-      const wait = Math.max(1, Math.ceil((failedBefore[0] + FAIL_WINDOW - Date.now()) / 1000));
+    // 检查当前 IP 是否连续失败过多 (单 IP 5 次 / 15分钟)
+    const ipFails = rateState.get("login:fail|" + ip) || [];
+    const recentFails = ipFails.filter(t => Date.now() - t < 15 * 60 * 1000);
+    if (recentFails.length >= 5) {
+      const wait = Math.max(1, Math.ceil((recentFails[0] + 15 * 60 * 1000 - Date.now()) / 1000));
       res.setHeader("Retry-After", String(wait));
       return sendJSON(req, res, 429, {
-        ok: false, error: "登录失败次数过多，工坊暂时闭门，请稍后再试", retryAfter: wait
+        ok: false, error: "当前网络连续登录失败较多，工坊暂时闭门，请稍后再试", retryAfter: wait
       });
     }
 
-    const perIp = checkRate("login:attempt", ip, 8, 15 * 60 * 1000);
-    if (imposeRate(req, res, perIp, "登录尝试次数过多，请稍后再试")) return;
-    const globalGate = checkRate("login:global", "*", 40, 15 * 60 * 1000);
-    if (imposeRate(req, res, globalGate, "登录请求过于频繁，请稍候再试")) return;
+    const perIp = checkRate("login:attempt", ip, 15, 15 * 60 * 1000);
+    if (imposeRate(req, res, perIp, "登录尝试过于频繁，请稍候再试")) return;
 
-    const body = await parseBody(req);
+    let body;
+    try {
+      body = await parseBody(req);
+    } catch (e) {
+      return sendJSON(req, res, 400, { ok: false, error: "无效的请求格式" });
+    }
+
+    if (!body || typeof body.password !== "string") {
+      return sendJSON(req, res, 400, { ok: false, error: "口令格式不正确" });
+    }
+
     const config = getOrInitConfig();
-    const pwd = String(body.password || "");
+    const pwd = body.password;
     const ok = await verifyPassword(pwd, config.adminPasswordHash);
     if (ok) {
+      // 成功登录：立即清空该 IP 的失败记录
       clearRate("login:attempt", ip);
       clearRate("login:fail", ip);
-      clearRate("login:globalfail", "*");
       // 旧版 sha256 存储：首次成功登录后透明升级为 scrypt
       if (!String(config.adminPasswordHash || "").startsWith("scrypt$")) {
         try {
@@ -1310,14 +1361,15 @@ const server = http.createServer(async (req, res) => {
         } catch (e) { console.warn("[安全] 口令哈希升级失败:", e.message); }
       }
       const token = generateAuthToken();
-      res.setHeader("Set-Cookie", `atelier_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
+      res.setHeader("Set-Cookie", "atelier_session=" + token + "; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000");
       return sendJSON(req, res, 200, { ok: true, token });
     }
+
+    // 登录失败：记录当前 IP 失败一次
     const fails = checkRate("login:fail", ip, 5, 15 * 60 * 1000);
-    checkRate("login:globalfail", "*", 8, FAIL_WINDOW);
     return sendJSON(req, res, 401, {
       ok: false, error: "口令错误",
-      ...(fails.allowed ? {} : { hint: "连续失败较多，请稍后再试" })
+      hint: fails.allowed ? ("还可尝试 " + fails.remaining + " 次") : "连续失败已达上限，已暂停尝试"
     });
   }
 
@@ -1732,20 +1784,47 @@ if (pathname === "/api/messages") {
       });
     }
     if (method === "POST") {
-      const body = await parseBody(req);
-      
-            // Honeypot Protection: Bots filling hidden bait inputs are immediately blacklisted
+      let body;
+      try {
+        body = await parseBody(req);
+      } catch (e) {
+        return sendJSON(req, res, 400, { ok: false, error: "无效的请求数据" });
+      }
+
+      if (!body || typeof body !== "object") {
+        return sendJSON(req, res, 400, { ok: false, error: "请求格式错误" });
+      }
+
+      // Honeypot Protection: Bots filling hidden bait inputs are immediately blacklisted
       if (body.website || body.honeypot || body.hp_token || body.user_website || body.user_email_check) {
         blacklistIP(clientIP, "触发留言板表单陷阱蜜罐 (Bot Trap)", 86400000 * 7); // 拉黑 7 天
         res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
         return res.end("403 Forbidden: Honeypot trap triggered.");
       }
 
-      if (!body.content || !body.content.trim()) {
+      // P0 H-1 彻底防御：严格校验 content 为字符串类型，杜绝非字符串入参导致 .trim 抛错崩溃打死进程
+      if (typeof body.content !== "string") {
+        return sendJSON(req, res, 400, { ok: false, error: "留言内容格式不正确，必须为文本" });
+      }
+      const rawContent = body.content.trim();
+      if (!rawContent) {
         return sendJSON(req, res, 400, { ok: false, error: "留言内容不能为空" });
       }
+      // L-3 前后端对齐：严格限制最多 300 字符
+      if (rawContent.length > 300) {
+        return sendJSON(req, res, 400, { ok: false, error: "留言内容不能超过 300 字" });
+      }
 
-      const rateCheck = checkMessageRateLimit(clientIP, body.content);
+      // 称谓类型与长度严格校验
+      if (body.author !== undefined && typeof body.author !== "string") {
+        return sendJSON(req, res, 400, { ok: false, error: "称谓格式不正确" });
+      }
+      const rawAuthor = (body.author || "").trim();
+      if (rawAuthor.length > 20) {
+        return sendJSON(req, res, 400, { ok: false, error: "称谓不能超过 20 字" });
+      }
+
+      const rateCheck = checkMessageRateLimit(clientIP, rawContent);
       if (!rateCheck.allowed) {
         if (rateCheck.retryAfter) res.setHeader("Retry-After", String(rateCheck.retryAfter));
         return sendJSON(req, res, 429, { ok: false, error: rateCheck.error, retryAfter: rateCheck.retryAfter });
@@ -1753,12 +1832,12 @@ if (pathname === "/api/messages") {
 
       const place = await resolvePlace(req);
       const messages = readJSON(MESSAGES_FILE, []);
-      const echoData = await generateSmartEcho(body.content, body.author, place.place);
+      const echoData = await generateSmartEcho(rawContent, rawAuthor || "墨友", place.place);
       // v40 · 自然点缀地域，杜绝机械硬套
       echoData.content = decorateGreeting(echoData.content, place.place);
       recordVisit(place, req);
-      const cleanAuthor = sanitizeInput(body.author ? String(body.author).slice(0, 30) : "墨友");
-      const cleanContent = sanitizeInput(String(body.content).slice(0, 500));
+      const cleanAuthor = sanitizeInput(rawAuthor || "墨友");
+      const cleanContent = sanitizeInput(rawContent);
       const newMsg = {
         id: "msg_" + Date.now().toString(36),
         author: cleanAuthor || "墨友",
@@ -1768,9 +1847,9 @@ if (pathname === "/api/messages") {
         echo: echoData,
         ...(["静", "思", "喜", "问"].includes(body.mood) ? { mood: body.mood } : {}),
         // v35 · 每日一问：只记问题标识与题目文字，便于前端按话题聚合，不记任何身份信息
-        ...(body.questionId ? {
-          questionId: String(body.questionId).slice(0, 24),
-          questionText: String(body.questionText || "").slice(0, 60)
+        ...(typeof body.questionId === "string" && body.questionId ? {
+          questionId: sanitizeInput(body.questionId).slice(0, 24),
+          questionText: typeof body.questionText === "string" ? sanitizeInput(body.questionText).slice(0, 60) : ""
         } : {}),
         visitorReplies: []
       };
@@ -1808,15 +1887,40 @@ if (pathname === "/api/messages") {
   // Visitor-to-visitor threaded replies (v26) — 让留墨之间也能彼此回响
   const guestReplyMatch = pathname.match(/^\/api\/messages\/([^/]+)\/guest-reply$/);
   if (guestReplyMatch && method === "POST") {
-    const body = await parseBody(req);
+    let body;
+    try {
+      body = await parseBody(req);
+    } catch (e) {
+      return sendJSON(req, res, 400, { ok: false, error: "无效的请求数据" });
+    }
+    if (!body || typeof body !== "object") {
+      return sendJSON(req, res, 400, { ok: false, error: "请求格式错误" });
+    }
     if (body.website || body.honeypot || body.hp_token) {
       return sendJSON(req, res, 200, { ok: true, ignored: true });
     }
-    const content = String(body.content || "").trim().slice(0, 200);
+    if (typeof body.content !== "string") {
+      return sendJSON(req, res, 400, { ok: false, error: "回笔内容格式不正确，必须为文本" });
+    }
+    const content = body.content.trim();
     if (!content) return sendJSON(req, res, 400, { ok: false, error: "回笔不能为空" });
-    if (!checkLightRate("gre:" + getClientIP(req), 15000)) {
+    if (content.length > 200) return sendJSON(req, res, 400, { ok: false, error: "回笔不能超过 200 字" });
+
+    if (body.author !== undefined && typeof body.author !== "string") {
+      return sendJSON(req, res, 400, { ok: false, error: "称谓格式不正确" });
+    }
+    const author = (body.author || "").trim();
+    if (author.length > 20) return sendJSON(req, res, 400, { ok: false, error: "称谓不能超过 20 字" });
+
+    // 单 IP 10 分钟最多 5 条楼中楼回复
+    const replyGate = checkRate("msg:reply:ip", clientIP, 5, 10 * 60 * 1000);
+    if (!replyGate.allowed) {
+      return sendJSON(req, res, 429, { ok: false, error: "回笔稍密，请静候 " + replyGate.retryAfter + " 秒再续一笔", retryAfter: replyGate.retryAfter });
+    }
+    if (!checkLightRate("gre:" + clientIP, 15000)) {
       return sendJSON(req, res, 429, { ok: false, error: "请稍歇片刻再附一笔" });
     }
+
     const messages = readJSON(MESSAGES_FILE, []);
     const idx = messages.findIndex(m => m.id === guestReplyMatch[1]);
     if (idx === -1) return sendJSON(req, res, 404, { ok: false, error: "留言不存在" });
@@ -1825,18 +1929,17 @@ if (pathname === "/api/messages") {
     if (thread.length >= 12) {
       return sendJSON(req, res, 429, { ok: false, error: "这条留墨的回响已满，欢迎另起一笔" });
     }
-    // v35 · 盖楼：replyTo 必须指向同一条留墨下已存在的一层；quote 只留被引用文字的短摘
-    const parentId = body.replyTo ? String(body.replyTo).slice(0, 40) : "";
+    const parentId = typeof body.replyTo === "string" ? body.replyTo.slice(0, 40) : "";
     if (parentId && !thread.some(r => r.id === parentId)) {
       return sendJSON(req, res, 400, { ok: false, error: "被引的一层已不在" });
     }
     const reply = {
       id: "vr_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-      author: body.author ? String(body.author).trim().slice(0, 20) : "过路墨友",
-      content,
+      author: sanitizeInput(author || "过路墨友"),
+      content: sanitizeInput(content),
       time: new Date().toISOString(),
       ...(parentId ? { replyTo: parentId } : {}),
-      ...(body.quote ? { quote: String(body.quote).trim().slice(0, 70) } : {})
+      ...(typeof body.quote === "string" && body.quote ? { quote: sanitizeInput(body.quote).slice(0, 70) } : {})
     };
     thread.push(reply);
     writeJSON(MESSAGES_FILE, messages);
@@ -1950,6 +2053,19 @@ if (pathname === "/api/messages") {
       sendResponse(req, res, 200, mime, content, isCacheable);
     }
   });
+  } catch (err) {
+    console.error("[ATELIER CRITICAL ERROR CAUGHT]", req.method, req.url, err);
+    if (!res.headersSent) {
+      try {
+        res.writeHead(500, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Connection": "close",
+          "X-Atelier-Origin": "app"
+        });
+        res.end(JSON.stringify({ ok: false, error: "工坊服务器内部异常，已安全拦截" }));
+      } catch (e) {}
+    }
+  }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
