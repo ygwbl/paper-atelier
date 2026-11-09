@@ -5557,21 +5557,31 @@ window.addEventListener('DOMContentLoaded', () => {
 
     var pIdx = 0;
     var charIdx = 0;
-    var isDeleting = false;
+    var state = 'typing'; // 'typing' | 'waiting' | 'deleting'
     var isPaused = false;
     var timer = null;
 
     bannerEl.addEventListener('mouseenter', function () { isPaused = true; });
     bannerEl.addEventListener('mouseleave', function () { isPaused = false; });
 
-    // 交互式“换一笺”
+    // 交互式“换一笺” (瞬时响应，绝不卡死)
     function nextPhrase() {
-      if (isDeleting) return;
-      isDeleting = true;
-      if (brushEl) {
-        brushEl.className = 'typewriter-brush is-deleting';
-      }
       if (timer) clearTimeout(timer);
+      state = 'deleting';
+      if (brushEl) brushEl.className = 'typewriter-brush is-deleting';
+      
+      // 刷新图标旋转动效反馈
+      if (refreshBtn) {
+        var icon = refreshBtn.querySelector('.refresh-icon');
+        if (icon) {
+          icon.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          icon.style.transform = 'rotate(360deg)';
+          setTimeout(function() {
+            icon.style.transition = 'none';
+            icon.style.transform = 'rotate(0deg)';
+          }, 450);
+        }
+      }
       tick();
     }
 
@@ -5586,7 +5596,7 @@ window.addEventListener('DOMContentLoaded', () => {
       nextPhrase();
     });
 
-    // 水墨逐字落笔扫润渲染器 (毛笔提按与笔势展开)
+    // 毛笔手书逐字入纸渲染器
     function renderInkChars(phrase, count, isFresh) {
       var frag = document.createDocumentFragment();
       for (var i = 0; i < count; i++) {
@@ -5598,13 +5608,13 @@ window.addEventListener('DOMContentLoaded', () => {
       textEl.innerHTML = '';
       textEl.appendChild(frag);
 
-      // 毛笔动作编排：落笔顿挫提按
+      // 毛笔提按与笔势扫掠
       if (brushEl) {
         if (isFresh) {
           brushEl.className = 'typewriter-brush';
-          void brushEl.offsetWidth; // 触发 reflow 重带动效
+          void brushEl.offsetWidth;
           brushEl.className = 'typewriter-brush is-writing';
-        } else if (isDeleting) {
+        } else if (state === 'deleting') {
           brushEl.className = 'typewriter-brush is-deleting';
         }
       }
@@ -5624,25 +5634,28 @@ window.addEventListener('DOMContentLoaded', () => {
 
       var currentPhrase = heroPhrases[pIdx] || heroPhrases[0];
 
-      if (isDeleting) {
+      if (state === 'deleting') {
         charIdx--;
         renderInkChars(currentPhrase, Math.max(0, charIdx), false);
         if (charIdx <= 0) {
-          isDeleting = false;
+          state = 'typing';
           pIdx = (pIdx + 1) % heroPhrases.length;
           if (brushEl) brushEl.className = 'typewriter-brush';
-          timer = setTimeout(tick, 400);
+          timer = setTimeout(tick, 300);
           return;
         }
-        timer = setTimeout(tick, 18);
+        timer = setTimeout(tick, 16);
       } else {
         charIdx++;
         renderInkChars(currentPhrase, charIdx, true);
         if (charIdx >= currentPhrase.length) {
-          isDeleting = true;
+          state = 'waiting';
           // 整句完成时，毛笔悬腕品题呼吸
           if (brushEl) brushEl.className = 'typewriter-brush is-hovering';
-          timer = setTimeout(tick, 4500); // 完整句停驻 4.5 秒供从容品读
+          timer = setTimeout(function() {
+            state = 'deleting';
+            tick();
+          }, 4500); // 完整句停驻 4.5 秒供从容品读
           return;
         }
         var lastChar = currentPhrase[charIdx - 1];
@@ -5659,7 +5672,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // ★ 开屏立显
     textEl.innerHTML = '';
     charIdx = 0;
-    isDeleting = false;
+    state = 'typing';
     if (timer) clearTimeout(timer);
     timer = setTimeout(tick, 120);
 
@@ -5689,11 +5702,12 @@ window.addEventListener('DOMContentLoaded', () => {
             '<div class="calligraphy-title-row">' +
               '<span class="calligraphy-seal-badge">墨池</span>' +
               '<h3 class="calligraphy-heading">纸境墨池 · 提笔挥毫</h3>' +
-              '<span class="calligraphy-subtip">提按自如 · 飞白入纸</span>' +
+              '<span class="calligraphy-subtip" id="c-brush-status">中锋 · 松烟墨</span>' +
             '</div>' +
             '<div class="calligraphy-tools">' +
               '<button type="button" class="c-tool-btn is-active" id="c-tool-ink" title="松烟浓墨"><span class="c-color-dot dot-ink"></span>松烟墨</button>' +
               '<button type="button" class="c-tool-btn" id="c-tool-seal" title="朱砂点赤"><span class="c-color-dot dot-seal"></span>朱砂印</button>' +
+              '<button type="button" class="c-tool-btn" id="c-tool-switch-brush" title="点击换一笔：小楷/中锋/大字">换一笔(<span id="c-brush-name">中锋</span>)</button>' +
               '<button type="button" class="c-tool-btn" id="c-tool-clear" title="清宣归位">清笺</button>' +
               '<button type="button" class="c-tool-close-btn" id="c-tool-close" title="收卷归座" aria-label="关闭">&times;</button>' +
             '</div>' +
@@ -5704,7 +5718,7 @@ window.addEventListener('DOMContentLoaded', () => {
           '</div>' +
           '<div class="calligraphy-footer">' +
             '<span class="calligraphy-foot-hint">以指或鼠标悬腕挥毫 · 快则飞白收细 · 慢则入木沉深</span>' +
-            '<button type="button" class="calligraphy-save-btn" id="c-tool-save">落款钤印</button>' +
+            '<button type="button" class="calligraphy-save-btn" id="c-tool-save">落款钤印(保存宣纸画卷)</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(modal);
@@ -5714,6 +5728,12 @@ window.addEventListener('DOMContentLoaded', () => {
     var wrap = document.getElementById('c-wrap');
     var ctx = canvas.getContext('2d');
     var currentColor = '#1f1c18';
+    var brushModeIdx = 1; // 0=小楷, 1=中锋, 2=大字
+    var brushModes = [
+      { name: '小楷', minW: 1.2, maxW: 4.5, base: 3 },
+      { name: '中锋', minW: 2.2, maxW: 9.5, base: 6 },
+      { name: '大字', minW: 4.5, maxW: 18.0, base: 12 }
+    ];
     var isDrawing = false;
     var lastPoint = null;
     var lastWidth = 6;
@@ -5747,32 +5767,94 @@ window.addEventListener('DOMContentLoaded', () => {
 
     var inkBtn = document.getElementById('c-tool-ink');
     var sealBtn = document.getElementById('c-tool-seal');
+    var switchBrushBtn = document.getElementById('c-tool-switch-brush');
     var clearBtn = document.getElementById('c-tool-clear');
     var saveBtn = document.getElementById('c-tool-save');
+    var statusText = document.getElementById('c-brush-status');
+    var brushNameText = document.getElementById('c-brush-name');
+
+    function updateStatus() {
+      var colorName = currentColor === '#1f1c18' ? '松烟墨' : '朱砂印';
+      var modeName = brushModes[brushModeIdx].name;
+      if (statusText) statusText.textContent = modeName + ' · ' + colorName;
+      if (brushNameText) brushNameText.textContent = modeName;
+    }
 
     inkBtn.addEventListener('click', function() {
       currentColor = '#1f1c18';
       inkBtn.classList.add('is-active');
       sealBtn.classList.remove('is-active');
+      updateStatus();
     });
 
     sealBtn.addEventListener('click', function() {
       currentColor = '#9e2a2b';
       sealBtn.classList.add('is-active');
       inkBtn.classList.remove('is-active');
+      updateStatus();
+    });
+
+    // 换一笔（小楷 -> 中锋 -> 大字 轮换）
+    switchBrushBtn.addEventListener('click', function() {
+      brushModeIdx = (brushModeIdx + 1) % brushModes.length;
+      lastWidth = brushModes[brushModeIdx].base;
+      updateStatus();
+      switchBrushBtn.style.transform = 'scale(0.92)';
+      setTimeout(function() { switchBrushBtn.style.transform = ''; }, 150);
     });
 
     clearBtn.addEventListener('click', function() {
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     });
 
+    // 保存图片：离线高精度白宣纸装裱，黑白分明，红印分明，彻底杜绝黑底看不清
     saveBtn.addEventListener('click', function() {
       try {
+        var out = document.createElement('canvas');
+        var outW = canvas.width;
+        var outH = canvas.height;
+        out.width = outW;
+        out.height = outH;
+        var oCtx = out.getContext('2d');
+
+        // 1. 铺上温润古雅的日本竹尾宣纸底色 (#fcfbf9)
+        oCtx.fillStyle = '#fcfbf9';
+        oCtx.fillRect(0, 0, outW, outH);
+
+        // 2. 宣纸外框古典装裱细线 (精细双线)
+        oCtx.strokeStyle = 'rgba(31, 28, 24, 0.14)';
+        oCtx.lineWidth = 1 * dpr;
+        oCtx.strokeRect(12 * dpr, 12 * dpr, outW - 24 * dpr, outH - 24 * dpr);
+        oCtx.strokeStyle = 'rgba(31, 28, 24, 0.06)';
+        oCtx.strokeRect(16 * dpr, 16 * dpr, outW - 32 * dpr, outH - 32 * dpr);
+
+        // 3. 将用户的毛笔墨宝绘制到宣纸上
+        oCtx.drawImage(canvas, 0, 0);
+
+        // 4. 右下角钤盖「纸境工坊 · 墨宝」朱砂印章
+        var sealSize = 42 * dpr;
+        var sealX = outW - 24 * dpr - sealSize;
+        var sealY = outH - 24 * dpr - sealSize;
+        oCtx.fillStyle = '#9e2a2b';
+        oCtx.fillRect(sealX, sealY, sealSize, sealSize);
+        oCtx.strokeStyle = '#fff8f0';
+        oCtx.lineWidth = 1.2 * dpr;
+        oCtx.strokeRect(sealX + 3 * dpr, sealY + 3 * dpr, sealSize - 6 * dpr, sealSize - 6 * dpr);
+        oCtx.fillStyle = '#fff8f0';
+        oCtx.font = '600 ' + (12 * dpr) + 'px "Songti SC","Noto Serif CJK SC",serif';
+        oCtx.textAlign = 'center';
+        oCtx.textBaseline = 'middle';
+        oCtx.fillText('纸境', sealX + sealSize / 2, sealY + sealSize * 0.36);
+        oCtx.fillText('留墨', sealX + sealSize / 2, sealY + sealSize * 0.72);
+
+        // 5. 导出高清 PNG
         var a = document.createElement('a');
         a.download = '纸境墨宝_' + Date.now() + '.png';
-        a.href = canvas.toDataURL('image/png');
+        a.href = out.toDataURL('image/png');
         a.click();
-      } catch(e) {}
+      } catch(e) {
+        console.warn('save failed', e);
+      }
     });
 
     // 经典水墨毛笔书法压力与速度插值算法 (Velocity Dynamics & Quadratic Bezier)
@@ -5794,11 +5876,12 @@ window.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       isDrawing = true;
       lastPoint = getPos(e);
-      lastWidth = 5;
+      var m = brushModes[brushModeIdx];
+      lastWidth = m.base;
       // 湿墨落笔墨痕微晕
       ctx.fillStyle = currentColor;
       ctx.beginPath();
-      ctx.arc(lastPoint.x, lastPoint.y, 2.5, 0, Math.PI * 2);
+      ctx.arc(lastPoint.x, lastPoint.y, m.base * 0.45, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -5810,8 +5893,9 @@ window.addEventListener('DOMContentLoaded', () => {
       var dt = Math.max(1, current.time - lastPoint.time);
       var speed = dist / dt;
 
+      var m = brushModes[brushModeIdx];
       // 速度越快笔画越细(出锋)，慢则沉厚入纸
-      var targetWidth = Math.max(1.8, Math.min(10, 10 - speed * 4));
+      var targetWidth = Math.max(m.minW, Math.min(m.maxW, m.maxW - speed * (m.maxW * 0.4)));
       var width = lastWidth * 0.65 + targetWidth * 0.35;
 
       ctx.save();

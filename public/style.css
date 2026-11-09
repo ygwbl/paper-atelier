@@ -9420,9 +9420,9 @@ html { scroll-behavior:smooth; }
 .typewriter-content-wrap {
   display: inline-flex;
   align-items: baseline;
-  min-height: 1.5rem;
-  font-family: var(--font-serif);
-  font-size: 0.98rem;
+  min-height: 1.7rem;
+  font-family: "Ma Shan Zheng", "Kaiti SC", "STKaiti", "楷体", "KaiTi", cursive, serif !important;
+  font-size: 1.18rem;
   color: var(--text-title);
   letter-spacing: 0.02em;
   line-height: 1.5;
@@ -9844,4 +9844,21 @@ html { scroll-behavior:smooth; }
   .refresh-text {
     display: none;
   }
+}
+
+.typewriter-text,
+.ink-char {
+  font-family: "Ma Shan Zheng", "Kaiti SC", "STKaiti", "楷体", "KaiTi", cursive, serif !important;
+  letter-spacing: 0.04em;
+}
+
+.c-tool-btn.is-active {
+  border-color: var(--brand-seal, #9e2a2b) !important;
+  color: var(--brand-seal, #9e2a2b) !important;
+  background: rgba(158, 42, 43, 0.1) !important;
+  box-shadow: 0 0 6px rgba(158, 42, 43, 0.2);
+  font-weight: 600;
+}
+.c-tool-btn:active {
+  transform: scale(0.95);
 }
