@@ -5941,3 +5941,32 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 })();
 
+
+
+// =========================================================================
+// v52: 动态感知注入域名 (Dynamic Host Perception - 彻底消灭硬编码域名)
+// =========================================================================
+function initDynamicHost() {
+  try {
+    const currentHost = window.location.host || window.location.hostname || 'blog.hlat.xyz';
+    const origin = window.location.origin || ('https://' + currentHost);
+
+    // 动态注入所有纯文本域名
+    document.querySelectorAll('.dyn-host-text').forEach(el => {
+      el.textContent = currentHost;
+    });
+
+    // 动态注入所有域名超链接
+    document.querySelectorAll('.dyn-host-link').forEach(el => {
+      el.href = origin;
+      el.textContent = currentHost;
+    });
+  } catch (err) {
+    console.warn('initDynamicHost warning:', err);
+  }
+}
+
+// 页面 DOM 加载与数据渲染后均触发动态域名同步
+window.addEventListener('DOMContentLoaded', initDynamicHost);
+setTimeout(initDynamicHost, 300);
+
