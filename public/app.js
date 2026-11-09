@@ -1087,7 +1087,7 @@ function renderReader(article) {
   if (postludeShareX) {
     postludeShareX.onclick = () => {
       const slug = article.slug || article.id;
-      const url = `https://hlat.top/article/${slug}`;
+      const url = `https://blog.hlat.xyz/article/${slug}`;
       const text = `【${article.title}】\n${(article.summary || '').trim()}\n\n来自 Sxltx · 纸境工坊：`;
       const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
       window.open(shareUrl, '_blank', 'noopener,noreferrer');
@@ -2187,7 +2187,7 @@ function initQuoteSystem() {
   if (copyBtn) {
     copyBtn.onclick = () => {
       const sourceName = quoteSourceEl ? quoteSourceEl.textContent : 'Sxltx · 纸境工坊';
-      const formatted = `「${currentSelectedQuote}」\n—— Sxltx《${sourceName}》\n来源：https://hlat.top`;
+      const formatted = `「${currentSelectedQuote}」\n—— Sxltx《${sourceName}》\n来源：https://blog.hlat.xyz`;
       navigator.clipboard.writeText(formatted).then(() => {
         showToast('已复制墨句文辞到剪贴板 ✦');
         modal.style.display = 'none';

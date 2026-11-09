@@ -1,17 +1,35 @@
 {
   "name": "Sxltx · 纸境工坊",
   "short_name": "纸境工坊",
-  "description": "Sxtx 的个人工坊与数字漫游手记。深度思考、极简交互与造物沉淀。",
+  "description": "东方素纸美学 · 零依赖极简原生个人出版工坊，记录云原生架构与系统深度沉淀。",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#fcfbf9",
   "theme_color": "#fcfbf9",
+  "categories": [
+    "news",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ]
 }
