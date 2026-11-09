@@ -906,6 +906,34 @@ function renderReader(article) {
   
   contentEl.innerHTML = insightCardHTML + parseMarkdown(article.content);
 
+  // v53 · 墨心导读流式落墨动效 (Streamed Ink Lens)
+  setTimeout(() => {
+    const listEl = document.getElementById('ai-insight-list');
+    if (!listEl) return;
+    const items = listEl.querySelectorAll('li');
+    items.forEach((item, idx) => {
+      const fullText = item.textContent;
+      item.textContent = '';
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(4px)';
+      item.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      
+      setTimeout(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateY(0)';
+        let charIdx = 0;
+        const charTimer = setInterval(() => {
+          charIdx++;
+          item.textContent = fullText.substring(0, charIdx);
+          if (charIdx >= fullText.length) {
+            clearInterval(charTimer);
+          }
+        }, 22);
+      }, idx * 320 + 150);
+    });
+  }, 120);
+
+
   // Bind code block copy buttons
   contentEl.querySelectorAll('.code-copy-btn').forEach(btn => {
     btn.onclick = (e) => {
@@ -2196,7 +2224,7 @@ function initQuoteSystem() {
   if (copyBtn) {
     copyBtn.onclick = () => {
       const sourceName = quoteSourceEl ? quoteSourceEl.textContent : 'Sxltx · 纸境工坊';
-      const formatted = `「${currentSelectedQuote}」\n—— Sxltx《${sourceName}》\n来源：https://blog.hlat.xyz`;
+      const formatted = `「${currentSelectedQuote}」\n—— Sxltx《${sourceName}》\n来源：${window.location.origin || "https://" + (window.location.host || "blog.hlat.xyz")}`;
       navigator.clipboard.writeText(formatted).then(() => {
         showToast('已复制墨句文辞到剪贴板 ✦');
         modal.style.display = 'none';

@@ -179,6 +179,9 @@ def update_syndication_and_seo():
 
     # 4. 主动推送到 IndexNow 搜索引擎集群 (Bing / Yandex)
     try:
+        if not INDEXNOW_KEY or len(INDEXNOW_KEY) < 8:
+            log("IndexNow 推送跳过: 未配置 INDEXNOW_KEY 密钥环境变量。")
+            return
         url_list = ["https://hlat.top/"] + [f"https://hlat.top/article/{a.get('slug') or a.get('id')}" for a in articles[:10]]
         payload = {
             "host": "hlat.top",
