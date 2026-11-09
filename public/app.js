@@ -1806,8 +1806,10 @@ if (msgContentInput && charCountEl) {
   });
 }
 
+let isMsgSubmitting = false;
 document.getElementById('guestbook-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (isMsgSubmitting) return;
   const authorInput = document.getElementById('msg-author');
   const contentInput = document.getElementById('msg-content');
   const btnSubmit = document.getElementById('btn-submit-msg');
@@ -1815,6 +1817,7 @@ document.getElementById('guestbook-form')?.addEventListener('submit', async (e) 
   const content = contentInput.value.trim();
 
   if (!content) return;
+  isMsgSubmitting = true;
 
   const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
   if (btnSubmit) {

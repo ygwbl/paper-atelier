@@ -242,6 +242,42 @@ function isTrustedPeer(peer) {
 }
 
 // Extract Real Client IP (never trust forwarding headers from untrusted peers)
+
+// v54 · 后端全字段深度 XSS 净化与输入防御
+function sanitizeInput(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/`/g, '&#x60;')
+    .replace(/\x00/g, '')
+    .trim();
+}
+
+// v54 · 恶意漏洞扫描器快速阻断 (Vulnerability Scanner Defense)
+const SCANNER_PROBES = /\/(?:wp-admin|wp-login|phpmyadmin|pma|actuator|telescope|solr|eval-stdin|phpinfo|\.env|\.git|\.aws|\.ssh)/i;
+const scannerBlacklist = new Map(); // ip -> expireTimestamp
+
+function isIpBlocked(ip) {
+  if (!ip) return false;
+  const expire = scannerBlacklist.get(ip);
+  if (!expire) return false;
+  if (Date.now() > expire) {
+    scannerBlacklist.delete(ip);
+    return false;
+  }
+  return true;
+}
+
+function recordScannerStrike(ip) {
+  if (!ip) return;
+  scannerBlacklist.set(ip, Date.now() + 3600000);
+  console.warn(`[SecurityStrike] Blocked malicious scanner IP: ${ip} for 1 hour.`);
+}
+
 function getClientIP(req) {
   const peer = normalizeIP(req.socket.remoteAddress);
   if (isTrustedPeer(peer)) {
@@ -763,12 +799,15 @@ function sendResponse(req, res, statusCode, contentType, body, isCacheable = fal
     return;
   }
 
-  // 1. Full Production-Grade Security Headers
+  // 1. Full Military-Grade Production Security Headers (v54)
   const headers = {
     "Content-Type": contentType,
     "Vary": "Origin, Accept-Encoding",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "SAMEORIGIN",
+    "X-XSS-Protection": "1; mode=block",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-origin",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()"
@@ -1222,7 +1261,14 @@ const server = http.createServer(async (req, res) => {
       if (body.stampText !== undefined) config.stampText = String(body.stampText).slice(0, 30);
       if (body.glmApiKey !== undefined) config.glmApiKey = String(body.glmApiKey).trim();
       writeJSON(CONFIG_FILE, config);
-      return sendJSON(req, res, 200, { ok: true, config });
+      const safeConfigResponse = Object.assign({}, config);
+      delete safeConfigResponse.glmApiKey;
+      delete safeConfigResponse.adminPasswordHash;
+      if (safeConfigResponse.ai) {
+        safeConfigResponse.ai = Object.assign({}, safeConfigResponse.ai);
+        delete safeConfigResponse.ai.apiKey;
+      }
+      return sendJSON(req, res, 200, { ok: true, config: safeConfigResponse });
     }
   }
 
@@ -1603,10 +1649,12 @@ if (pathname === "/api/messages") {
       // v40 · 自然点缀地域，杜绝机械硬套
       echoData.content = decorateGreeting(echoData.content, place.place);
       recordVisit(place, req);
+      const cleanAuthor = sanitizeInput(body.author ? String(body.author).slice(0, 30) : "墨友");
+      const cleanContent = sanitizeInput(String(body.content).slice(0, 500));
       const newMsg = {
         id: "msg_" + Date.now().toString(36),
-        author: body.author ? String(body.author).trim().slice(0, 30) : "无名墨友",
-        content: String(body.content).trim().slice(0, 500),
+        author: cleanAuthor || "墨友",
+        content: cleanContent,
         time: new Date().toISOString(),
         location: place.known ? place.place : "",
         echo: echoData,
@@ -1743,6 +1791,18 @@ if (pathname === "/api/messages") {
   }
 
   // v37 · 敏感路径明确 404：/.git/HEAD、/server.js 等不再误判为「有源码泄露」
+  const clientIP = getClientIP(req);
+  if (isIpBlocked(clientIP)) {
+    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
+    return res.end("Access Denied: Malicious activity detected.");
+  }
+
+  if (SCANNER_PROBES.test(pathname)) {
+    recordScannerStrike(clientIP);
+    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
+    return res.end("Forbidden.");
+  }
+
   const SENSITIVE_PATH = /^\/(?:\.git|\.env|\.ssh|data|scripts|systemd|node_modules)(?:\/|$)|^\/(?:server\.js|package(?:-lock)?\.json|curator_daemon\.py|watchdog_v2\.py|README\.md|config\.json)$/i;
   if (SENSITIVE_PATH.test(pathname) || /\/\.[^/]+/.test(pathname)) return notFound(req, res);
 
