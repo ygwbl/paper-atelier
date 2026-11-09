@@ -8724,3 +8724,30 @@ html { scroll-behavior:smooth; }
   .search-result-item { animation: none; }
   .reader-toc-item.is-active { transform: none; }
 }
+
+
+/* v48.1 打字机与印章高光强化 */
+.typewriter-cursor {
+  display: inline-block !important;
+  color: #b83b3b !important;
+  font-weight: 400 !important;
+  margin-left: 2px !important;
+  animation: typewriterPulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+  vertical-align: baseline !important;
+  user-select: none !important;
+  text-shadow: 0 0 8px rgba(184, 59, 59, 0.5) !important;
+}
+@keyframes typewriterPulse {
+  0%, 100% { opacity: 1; transform: scaleY(1); }
+  50% { opacity: 0.15; transform: scaleY(0.85); }
+}
+.seal-stamp {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease !important;
+  cursor: pointer !important;
+  user-select: none !important;
+}
+.seal-stamp:active,
+.seal-stamp.is-stamped {
+  transform: scale(0.92) rotate(-2deg) !important;
+  box-shadow: 0 0 16px rgba(184, 59, 59, 0.6) !important;
+}

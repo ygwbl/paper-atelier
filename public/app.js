@@ -456,7 +456,7 @@ function applyConfig(cfg) {
   }
   if (cfg.siteSubtitle) {
     const subEl = document.getElementById('site-subtitle-display');
-    if (subEl) subEl.textContent = cfg.siteSubtitle;
+    if (subEl) if (window.updateHeroTypewriter) { window.updateHeroTypewriter(cfg.siteSubtitle); }
   }
   if (cfg.bio) {
     const bioEl = document.getElementById('site-bio-display');
@@ -5304,77 +5304,100 @@ window.addEventListener('DOMContentLoaded', () => {
 /* ======================== v41 · 完 ======================== */
 
 
-/* ======================== v48 · 东方文墨微交互与动态打字机系统 ======================== */
+/* ======================== v48 · 东方文墨微交互与动态打字机系统 (自愈增强版) ======================== */
 (function initV48Suite() {
   'use strict';
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // -------------------------------------------------------------------------
-  // 场景 1: Hero 顶部「文墨打字机」
+  // 场景 1: Hero 顶部「文墨打字机」（开屏即打 + 朱砂光晕 + 悬浮静止）
   // -------------------------------------------------------------------------
-  function initHeroTypewriter() {
-    var textEl = document.getElementById('hero-typewriter-text');
-    if (!textEl) return;
+  var heroPhrases = [
+    "在微云之境，构筑自治的工程工作流与思想自留地。",
+    "真正的零外部依赖 · 日本竹尾素纸的宁静阅读心境。",
+    "探寻 Linux 内核、存储引擎与网络协议的底层之道。",
+    "让文字、代码与运行中的造物，在数字领地从容常驻。"
+  ];
 
-    var phrases = [
-      "在微云之境，构筑自治的工程工作流与思想自留地。",
-      "真正的零外部依赖 · 日本竹尾素纸的宁静阅读心境。",
-      "探寻 Linux 内核、存储引擎与网络协议的底层之道。",
-      "让文字、代码与运行中的造物，在数字领地从容常驻。"
-    ];
+  window.updateHeroTypewriter = function (newPhrase) {
+    if (newPhrase && typeof newPhrase === 'string') {
+      var trimmed = newPhrase.trim();
+      if (trimmed && heroPhrases.indexOf(trimmed) === -1) {
+        heroPhrases.unshift(trimmed);
+      }
+    }
+  };
+
+  function initHeroTypewriter() {
+    var subEl = document.getElementById('site-subtitle-display');
+    if (!subEl) return;
+
+    // 结构自愈：无论外部如何清空，自动恢复打字机容器
+    var textEl = document.getElementById('hero-typewriter-text');
+    if (!textEl) {
+      subEl.innerHTML = '<span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true">|</span>';
+      textEl = document.getElementById('hero-typewriter-text');
+    }
 
     if (reduceMotion) {
-      textEl.textContent = phrases[0];
+      textEl.textContent = heroPhrases[0];
       return;
     }
 
     var pIdx = 0;
-    var charIdx = phrases[0].length;
+    var charIdx = 0;
     var isDeleting = false;
     var isPaused = false;
     var timer = null;
 
-    var container = textEl.closest('.hero-subtitle') || textEl;
-    container.addEventListener('mouseenter', function () { isPaused = true; });
-    container.addEventListener('mouseleave', function () { isPaused = false; });
+    subEl.addEventListener('mouseenter', function () { isPaused = true; });
+    subEl.addEventListener('mouseleave', function () { isPaused = false; });
 
     function tick() {
+      // 容错：若 textEl 被意外移出 DOM，重新寻找或重建
+      if (!document.getElementById('hero-typewriter-text')) {
+        subEl.innerHTML = '<span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true">|</span>';
+        textEl = document.getElementById('hero-typewriter-text');
+      }
+
       if (isPaused) {
         timer = setTimeout(tick, 200);
         return;
       }
 
-      var currentPhrase = phrases[pIdx];
+      var currentPhrase = heroPhrases[pIdx] || heroPhrases[0];
 
       if (isDeleting) {
         charIdx--;
         textEl.textContent = currentPhrase.slice(0, charIdx);
         if (charIdx <= 0) {
           isDeleting = false;
-          pIdx = (pIdx + 1) % phrases.length;
-          timer = setTimeout(tick, 450);
+          pIdx = (pIdx + 1) % heroPhrases.length;
+          timer = setTimeout(tick, 380);
           return;
         }
-        timer = setTimeout(tick, 32);
+        timer = setTimeout(tick, 26);
       } else {
         charIdx++;
         textEl.textContent = currentPhrase.slice(0, charIdx);
         if (charIdx >= currentPhrase.length) {
           isDeleting = true;
-          timer = setTimeout(tick, 3600);
+          timer = setTimeout(tick, 3500);
           return;
         }
         var lastChar = currentPhrase[charIdx - 1];
-        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。') ? 180 : 65;
+        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。' || lastChar === '、') ? 160 : 52;
         timer = setTimeout(tick, delay);
       }
     }
 
-    timer = setTimeout(function () {
-      isDeleting = true;
-      tick();
-    }, 3200);
+    // ★ 开屏立显：清空后立刻启动打字动效！
+    textEl.textContent = '';
+    charIdx = 0;
+    isDeleting = false;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(tick, 150);
   }
 
   // -------------------------------------------------------------------------
@@ -5460,7 +5483,7 @@ window.addEventListener('DOMContentLoaded', () => {
           textSpan.textContent += lineText[cIdx];
           cIdx++;
           var ch = lineText[cIdx - 1];
-          var delay = (ch === '：' || ch === '，' || ch === '；' || ch === '。') ? 85 : 25;
+          var delay = (ch === '：' || ch === '，' || ch === '；' || ch === '。') ? 85 : 24;
           activeLensTyping = setTimeout(typeChar, delay);
         } else {
           cursorSpan.remove();
@@ -5520,7 +5543,7 @@ window.addEventListener('DOMContentLoaded', () => {
           phTimer = setTimeout(tickPlaceholder, 400);
           return;
         }
-        phTimer = setTimeout(tickPlaceholder, 30);
+        phTimer = setTimeout(tickPlaceholder, 28);
       } else {
         phChar++;
         input.setAttribute('placeholder', cur.slice(0, phChar));
@@ -5529,7 +5552,7 @@ window.addEventListener('DOMContentLoaded', () => {
           phTimer = setTimeout(tickPlaceholder, 2800);
           return;
         }
-        phTimer = setTimeout(tickPlaceholder, 60);
+        phTimer = setTimeout(tickPlaceholder, 58);
       }
     }
 
@@ -5722,16 +5745,42 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // -------------------------------------------------------------------------
-  // 挂钩现有的渲染与启动入口
+  // 场景 5: 朱砂印章按压反馈与水墨涟漪
+  // -------------------------------------------------------------------------
+  function initStampRipple() {
+    var stamp = document.querySelector('.seal-stamp');
+    if (!stamp) return;
+
+    var toasts = [
+      "纸境素雅 · 岁月从容",
+      "零依赖架构 · 30MB 极简常驻",
+      "以文墨抵御算法之速朽",
+      "欢迎知音到访 · 留墨常青"
+    ];
+
+    stamp.addEventListener('click', function () {
+      stamp.classList.add('is-stamped');
+      setTimeout(function () { stamp.classList.remove('is-stamped'); }, 300);
+      var msg = toasts[Math.floor(Math.random() * toasts.length)];
+      if (typeof showToast === 'function') {
+        showToast(msg);
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // 挂钩与启动
   // -------------------------------------------------------------------------
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       initHeroTypewriter();
       initEnhancedSearch();
+      initStampRipple();
     });
   } else {
     initHeroTypewriter();
     initEnhancedSearch();
+    initStampRipple();
   }
 
   var origRenderReader = window.renderReader;
