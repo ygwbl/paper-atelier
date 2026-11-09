@@ -4852,18 +4852,19 @@ window.addEventListener('DOMContentLoaded', () => {
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
 
-    // 东方松烟空灵微尘 (极简主义：仅保留28粒极微小墨雾微粒，纯净淡雅，彻底清除各色噪点)
+    // 东方松烟与熟宣金箔碎屑 (金粟笺微光与空灵墨霭)
     const dots = [];
-    for (let i = 0; i < 28; i++) {
-      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.6 + Math.random() * 2.4;
+    for (let i = 0; i < 32; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.6 + Math.random() * 2.8;
       const s = Math.sqrt(1 - u * u);
       dots.push({
         x: r * s * Math.cos(th),
-        y: u * r * 0.55,
+        y: u * r * 0.52,
         z: r * s * Math.sin(th),
-        s: 0.35 + Math.random() * 0.45,
+        s: 0.35 + Math.random() * 0.55,
         ph: Math.random() * 6.28,
-        twinkle: 1.2 + Math.random() * 1.5
+        twinkle: 1.1 + Math.random() * 1.6,
+        isGold: Math.random() > 0.42
       });
     }
 
@@ -4876,7 +4877,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       let x = p[0] * cy - p[2] * sy, z = p[0] * sy + p[2] * cy;
       let y = p[1] * cp - z * sp; z = p[1] * sp + z * cp;
-      const dist = 9.5, f = Math.min(W, H * 1.6) * 0.62;
+      const dist = 9.5, f = Math.min(W, H * 1.5) * 0.94;
       const zz = z + dist;
       return { x: W / 2 + (x * f) / zz, y: H * 0.52 + (y * f) / zz, z: zz };
     }
@@ -4906,17 +4907,52 @@ window.addEventListener('DOMContentLoaded', () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      // 地面柔影
-      const g = project([0, 1.9, 0]);
-      const grad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, W * 0.28);
-      grad.addColorStop(0, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.35 : 0.08));
+      // 1. 同心水墨回环金石轨与印石大柔影
+      const g = project([0, 2.05, 0]);
+      ctx.save();
+      ctx.translate(g.x, g.y);
+      ctx.scale(1, 0.22);
+
+      // 宣纸同心墨轨 (微妙空间参照，消除孤悬虚空感)
+      ctx.beginPath();
+      ctx.arc(0, 0, W * 0.34, 0, Math.PI * 2);
+      ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.09 : 0.04);
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.setLineDash([4 * dpr, 6 * dpr]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 中心印石大柔影
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.26);
+      grad.addColorStop(0, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.38 : 0.12));
+      grad.addColorStop(0.5, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.12 : 0.04));
       grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save(); ctx.translate(g.x, g.y); ctx.scale(1, 0.22); ctx.translate(-g.x, -g.y);
-      ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H); ctx.restore();
+      ctx.fillStyle = grad;
+      ctx.fillRect(-W, -H, W * 2, H * 2);
+      ctx.restore();
+
+      // 每张悬浮纸页投射到纸面的动态柔影 (增强层次深度)
+      SHEETS.forEach((_, i) => {
+        const ang = (i / SHEETS.length) * Math.PI * 2 + t * 0.12;
+        const R = 2.95 + lift[i] * 0.38;
+        const cx = Math.sin(ang) * R, cz = Math.cos(ang) * R;
+        const sp = project([cx, 2.05, cz]);
+        ctx.save();
+        ctx.translate(sp.x, sp.y);
+        ctx.scale(1, 0.22);
+        const sgrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 48 * dpr);
+        sgrad.addColorStop(0, rgb(pal.ink, 1, pal.dark ? 0.22 : 0.07));
+        sgrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = sgrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 48 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
 
       const faces = [];
-      // 朱砂印立方
-      const spin = t * 0.35, bob = Math.sin(t * 1.1) * 0.08, S = 0.72;
+      // 朱砂印立方 (尺度饱满，石质沉厚)
+      const spin = t * 0.35, bob = Math.sin(t * 1.1) * 0.08, S = 0.84;
       const cubeV = [];
       for (let i = 0; i < 8; i++) {
         let p = [(i & 1 ? 1 : -1) * S, (i & 2 ? 1 : -1) * S, (i & 4 ? 1 : -1) * S];
@@ -4936,14 +4972,14 @@ window.addEventListener('DOMContentLoaded', () => {
         faces.push({ z: pts.reduce((s, p) => s + p.z, 0) / 4, kind: 'cube', pts, n, label: f[4] });
       });
 
-      // 五张纸页
+      // 五张纸页 (经折装册页尺度，典雅沉稳)
       SHEETS.forEach((s, i) => {
         const ang = (i / SHEETS.length) * Math.PI * 2 + t * 0.12;
-        const R = 2.75 + lift[i] * 0.35, hw = 0.62, hh = 0.82;
-        const cy = Math.sin(t * 0.9 + i * 1.3) * 0.18 - 0.1;
+        const R = 2.95 + lift[i] * 0.38, hw = 0.76, hh = 1.05;
+        const cy = Math.sin(t * 0.9 + i * 1.3) * 0.16 - 0.12;
         const cx = Math.sin(ang) * R, cz = Math.cos(ang) * R;
         const tx = -Math.cos(ang), tz = Math.sin(ang); // 切向（使正面文字朝外可读）
-        const tilt = 0.12;
+        const tilt = 0.1;
         const corners = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([u, v]) =>
           [cx + tx * u, cy + v + tilt * u * 0.2, cz + tz * u]);
         const n = [Math.sin(ang), 0, Math.cos(ang)];
@@ -4954,19 +4990,23 @@ window.addEventListener('DOMContentLoaded', () => {
 
       faces.sort((a, b) => b.z - a.z);
 
-      // 空间松烟墨气微尘（极度克制、虚焦柔和）
+      // 空间松烟墨气与金粟金箔微尘
       const dp = dots.map(d => {
         const p = project(rotY([d.x, d.y + Math.sin(t * 0.8 + d.ph) * 0.1, d.z], t * 0.04));
-        p.s = d.s; p.ph = d.ph; p.twinkle = d.twinkle;
+        p.s = d.s; p.ph = d.ph; p.twinkle = d.twinkle; p.isGold = d.isGold;
         return p;
       });
       const drawDots = (far) => dp.forEach(d => {
         if ((d.z > 9.5) !== far) return;
-        const distA = Math.max(0.04, Math.min(0.42, 1.4 - d.z / 9.5));
-        const tw = 0.75 + 0.25 * Math.sin(t * d.twinkle + d.ph);
-        const alpha = distA * tw * (pal.dark ? 0.32 : 0.16);
+        const distA = Math.max(0.04, Math.min(0.48, 1.4 - d.z / 9.5));
+        const tw = 0.72 + 0.28 * Math.sin(t * d.twinkle + d.ph);
+        const alpha = distA * tw * (pal.dark ? 0.38 : 0.22);
         ctx.beginPath();
-        ctx.fillStyle = rgb(pal.ink, 1, alpha);
+        if (d.isGold) {
+          ctx.fillStyle = pal.dark ? `rgba(235, 195, 110, ${alpha * 0.85})` : `rgba(185, 138, 48, ${alpha * 0.75})`;
+        } else {
+          ctx.fillStyle = rgb(pal.ink, 1, alpha * 0.55);
+        }
         ctx.arc(d.x, d.y, d.s * dpr * (9.5 / d.z), 0, 6.283);
         ctx.fill();
       });
@@ -5070,9 +5110,9 @@ window.addEventListener('DOMContentLoaded', () => {
             ctx.lineTo(110, 32);
             ctx.stroke();
 
-            // 3. 核心大标题：沉穆有力的典雅宋体
-            ctx.fillStyle = rgb(pal.ink, 1, 0.94);
-            ctx.font = '600 28px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
+            // 3. 核心大标题：毛笔书法行草美学
+            ctx.fillStyle = rgb(pal.ink, 1, 0.96);
+            ctx.font = '600 28px "Ma Shan Zheng", "Songti SC", "Noto Serif CJK SC", serif';
             ctx.fillText(s.title, 14, 66);
 
             // 4. 副标题说明文字：疏朗优雅
@@ -5168,7 +5208,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const h = pick(e);
       if (h !== hover) {
         hover = h;
-        canvas.style.cursor = h >= 0 ? 'pointer' : 'grab';
+        canvas.style.cursor = h >= 0 ? 'var(--cursor-pointer)' : 'var(--cursor-brush)';
         if (tip) {
           tip.textContent = h >= 0 ? `前往 ${SHEETS[h].num} · ${SHEETS[h].title}` : '';
           tip.classList.toggle('is-on', h >= 0);

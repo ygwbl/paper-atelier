@@ -1,3 +1,38 @@
+@font-face {
+  font-family: 'Ma Shan Zheng';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/mashanzheng-sub.woff') format('woff');
+}
+
+/* ==========================================================================
+   v61 · 东方文墨拟真毛笔光标 (Calligraphy Brush Custom Cursor)
+   精确针尖笔锋 (Hotspot 0 0) · 玄墨狼毫常态 · 朱砂点矾悬停 · 顿笔墨晕书写
+   ========================================================================== */
+@media (hover: hover) and (pointer: fine) {
+  :root {
+    --cursor-brush: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none"><g transform="translate(1, 1)"><path d="M0 0 C1.2 3.2 4.2 8.2 9.4 11.4 L12 8.8 C8.8 3.6 3.8 0.6 0 0 Z" fill="rgba(0,0,0,0.18)"/><path d="M11.5 14.2 L25.8 28.5 C26.4 29.1 27.4 29.1 28 28.5 C28.6 27.9 28.6 26.9 28 26.3 L13.7 12 Z" fill="rgba(0,0,0,0.15)"/></g><path d="M11.5 14.1 L26 28.6 C26.6 29.2 27.6 29.2 28.2 28.6 C28.8 28 28.8 27 28.2 26.4 L13.7 11.9 Z" fill="%232b211b"/><path d="M12.5 13.1 L27 27.6" stroke="%235a4437" stroke-width="1.2" stroke-linecap="round"/><line x1="13.2" y1="12.2" x2="27.4" y2="26.4" stroke="rgba(255,255,255,0.28)" stroke-width="0.6"/><path d="M9.6 12.2 L12.2 9.6 L14 11.4 L11.4 14 Z" fill="%23cba258" stroke="%23785516" stroke-width="0.5"/><line x1="10.5" y1="11.3" x2="12.3" y2="13.1" stroke="%2348330c" stroke-width="0.4"/><path d="M0 0 C0.8 3 3.6 8 8.8 11.2 L11.4 8.6 C8.2 3.4 3.2 0.6 0 0 Z" fill="%231a1614"/><path d="M1 1 C2.6 3.4 5.8 7 9.8 10" stroke="%23453b35" stroke-width="0.7" stroke-linecap="round"/><path d="M1.8 0.8 C3.6 2.2 6.8 5 10.5 8" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/><path d="M0 0 L1.8 0.5 C1.2 1.2 1.2 1.2 0.5 1.8 Z" fill="%23050404"/></svg>') 0 0, auto;
+
+    --cursor-pointer: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none"><g transform="translate(1, 1)"><path d="M0 0 C1.2 3.2 4.2 8.2 9.4 11.4 L12 8.8 C8.8 3.6 3.8 0.6 0 0 Z" fill="rgba(158,42,43,0.22)"/><path d="M11.5 14.2 L25.8 28.5 C26.4 29.1 27.4 29.1 28 28.5 C28.6 27.9 28.6 26.9 28 26.3 L13.7 12 Z" fill="rgba(0,0,0,0.15)"/></g><path d="M11.5 14.1 L26 28.6 C26.6 29.2 27.6 29.2 28.2 28.6 C28.8 28 28.8 27 28.2 26.4 L13.7 11.9 Z" fill="%232b211b"/><path d="M12.5 13.1 L27 27.6" stroke="%235a4437" stroke-width="1.2" stroke-linecap="round"/><line x1="13.2" y1="12.2" x2="27.4" y2="26.4" stroke="rgba(255,255,255,0.3)" stroke-width="0.6"/><path d="M9.6 12.2 L12.2 9.6 L14 11.4 L11.4 14 Z" fill="%23e5be6c" stroke="%2399702a" stroke-width="0.5"/><path d="M0 0 C0.8 3 3.6 8 8.8 11.2 L11.4 8.6 C8.2 3.4 3.2 0.6 0 0 Z" fill="%23a82c2e"/><path d="M0.8 0.8 C2.6 3.4 5.8 7 9.8 10" stroke="%23ea5859" stroke-width="0.8" stroke-linecap="round"/><path d="M0 0 L1.8 0.5 C1.2 1.2 1.2 1.2 0.5 1.8 Z" fill="%23d63234"/></svg>') 0 0, pointer;
+
+    --cursor-writing: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="2" cy="2" r="3" fill="rgba(15,12,10,0.3)"/><circle cx="1.5" cy="1.5" r="1.5" fill="%23050404"/><path d="M10.5 15.1 L25 29.6 C25.6 30.2 26.6 30.2 27.2 29.6 C27.8 29 27.8 28 27.2 27.4 L12.7 12.9 Z" fill="%232b211b"/><path d="M8.6 13.2 L11.2 10.6 L13 12.4 L10.4 15 Z" fill="%23cba258"/><path d="M1 1 C1.8 4.5 4.6 9.5 8.6 13.2 L11.2 10.6 C8.2 6.5 3.5 2 1 1 Z" fill="%23141110"/></svg>') 1 1, crosshair;
+  }
+
+  body, html {
+    cursor: var(--cursor-brush);
+  }
+
+  a, button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"], select, summary, .clickable, .tag, .c-tool-btn, .refresh-btn, .nav-item, .v39-film-btn, .btn-primary, .btn-secondary, .filter-chip, .reader-nav-btn {
+    cursor: var(--cursor-pointer) !important;
+  }
+
+  #calligraphy-canvas, .c-canvas-wrap {
+    cursor: var(--cursor-writing) !important;
+  }
+}
+
+
 /* ==========================================================================
    Sxtx · 纸境工坊 · Studio Editorial Craft CSS
    Design Intelligence: Swiss Grid / Editorial Takeo Paper / No-AI-Slop
@@ -8150,12 +8185,12 @@ html {
   display: block;
   width: 100%;
   height: 100%;
-  cursor: grab;
+  cursor: var(--cursor-brush, grab);
   touch-action: pan-y;
   opacity: 1;
 }
 .v39-stage.is-ready .v39-canvas { opacity: 1; }
-.v39-stage.is-dragging .v39-canvas { cursor: grabbing; }
+.v39-stage.is-dragging .v39-canvas { cursor: var(--cursor-writing, grabbing) !important; }
 .v39-canvas:focus-visible { outline: 2px solid var(--focus-ring) !important; outline-offset: -4px; }
 
 .v39-tip {
