@@ -458,10 +458,7 @@ function applyConfig(cfg) {
     const subEl = document.getElementById('site-subtitle-display');
     if (subEl) if (window.updateHeroTypewriter) { window.updateHeroTypewriter(cfg.siteSubtitle); }
   }
-  if (cfg.bio) {
-    const bioEl = document.getElementById('site-bio-display');
-    if (bioEl) bioEl.innerHTML = cfg.bio;
-  }
+  // bio omitted for minimalism in Hero
   if (cfg.stampText) {
     const sealEl = document.getElementById('seal-text-display');
     if (sealEl) sealEl.innerHTML = cfg.stampText.replace(/\n/g, '<br>');
@@ -1766,11 +1763,16 @@ if (msgContentInput && charCountEl) {
   msgContentInput.addEventListener('input', () => {
     const len = msgContentInput.value.length;
     charCountEl.textContent = `${len} / 300`;
+    if (len >= 150) {
+      charCountEl.classList.add('visible');
+    } else {
+      charCountEl.classList.remove('visible');
+    }
     if (len > 280) {
-      charCountEl.style.color = '#c2410c';
+      charCountEl.style.color = '#b83b3b';
       charCountEl.style.fontWeight = 'bold';
     } else {
-      charCountEl.style.color = 'var(--text-muted)';
+      charCountEl.style.color = 'var(--text-faint)';
       charCountEl.style.fontWeight = 'normal';
     }
   });
@@ -1780,10 +1782,17 @@ document.getElementById('guestbook-form')?.addEventListener('submit', async (e) 
   e.preventDefault();
   const authorInput = document.getElementById('msg-author');
   const contentInput = document.getElementById('msg-content');
+  const btnSubmit = document.getElementById('btn-submit-msg');
   const author = authorInput.value.trim();
   const content = contentInput.value.trim();
 
   if (!content) return;
+
+  const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
+  if (btnSubmit) {
+    btnSubmit.classList.add('submitting');
+    btnSubmit.innerHTML = '<span>落笔中…</span><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+  }
 
   try {
     const res = await fetch('/api/messages', {

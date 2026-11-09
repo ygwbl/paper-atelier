@@ -8751,3 +8751,195 @@ html { scroll-behavior:smooth; }
   transform: scale(0.92) rotate(-2deg) !important;
   box-shadow: 0 0 16px rgba(184, 59, 59, 0.6) !important;
 }
+
+
+/* --------------------------------------------------------------------------
+   Guestbook 东方素纸灵动交互增强 (v50)
+   -------------------------------------------------------------------------- */
+.guestbook-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 8px;
+  padding: 1.15rem;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.guestbook-form:focus-within {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(184, 59, 59, 0.08);
+}
+
+.form-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.paper-input, .paper-textarea, .paper-select {
+  background: var(--bg-paper);
+  border: 1px solid var(--border-line);
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text-title);
+  outline: none;
+  transition: border-color 0.28s ease, box-shadow 0.28s ease, background-color 0.28s ease;
+}
+
+.paper-input:focus, .paper-textarea:focus, .paper-select:focus {
+  border-color: rgba(184, 59, 59, 0.65);
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(184, 59, 59, 0.15), 0 3px 12px rgba(184, 59, 59, 0.08);
+}
+
+.input-author {
+  flex: 0 0 148px;
+  min-width: 130px;
+}
+
+.input-content {
+  flex: 1;
+  min-width: 220px;
+}
+
+#btn-submit-msg {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.15rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: var(--text-title);
+  color: #ffffff;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#btn-submit-msg svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+#btn-submit-msg:hover {
+  background: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+}
+
+#btn-submit-msg:hover svg {
+  transform: translate(2px, -2px) rotate(-8deg);
+}
+
+#btn-submit-msg.submitting {
+  pointer-events: none;
+  background: #44413e !important;
+  color: #dedad4 !important;
+}
+
+#btn-submit-msg.submitting svg {
+  transform: translate(16px, -16px) scale(0.5);
+  opacity: 0;
+}
+
+/* 心境印 (金石微印胶囊) */
+.mood-seal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.1rem;
+}
+
+.mood-seal-label {
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  margin-right: 0.2rem;
+  letter-spacing: 0.05em;
+}
+
+.mood-seal {
+  width: 27px;
+  height: 27px;
+  border: 1px solid var(--border-line);
+  border-radius: 4px;
+  background: var(--bg-paper);
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  line-height: 1;
+}
+
+.mood-seal:hover {
+  border-color: rgba(184, 59, 59, 0.5);
+  color: var(--brand-seal, #b83b3b);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(184, 59, 59, 0.12);
+}
+
+.mood-seal:active {
+  transform: scale(0.92);
+}
+
+.mood-seal.active {
+  background: var(--brand-seal, #b83b3b);
+  border-color: var(--brand-seal, #b83b3b);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(184, 59, 59, 0.32);
+  transform: scale(1.04);
+}
+
+/* 字数统计平滑隐式感知 */
+.guestbook-hint-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 0.35rem;
+  min-height: 1.2rem;
+}
+
+.char-count-hint {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--text-faint, #a8a49e);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.char-count-hint.visible {
+  opacity: 1;
+}
+
+/* 水墨浸润登场动效 */
+@keyframes inkBloom {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.message-card {
+  animation: inkBloom 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
