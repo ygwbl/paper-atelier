@@ -257,25 +257,94 @@ function sanitizeInput(str) {
     .trim();
 }
 
-// v54 · 恶意漏洞扫描器快速阻断 (Vulnerability Scanner Defense)
-const SCANNER_PROBES = /\/(?:wp-admin|wp-login|phpmyadmin|pma|actuator|telescope|solr|eval-stdin|phpinfo|\.env|\.git|\.aws|\.ssh)/i;
-const scannerBlacklist = new Map(); // ip -> expireTimestamp
 
-function isIpBlocked(ip) {
-  if (!ip) return false;
-  const expire = scannerBlacklist.get(ip);
-  if (!expire) return false;
-  if (Date.now() > expire) {
-    scannerBlacklist.delete(ip);
+
+// ==============================================================================
+// v55 · 全域主动防御蜜罐与 IP 自动拉黑系统 (Atelier Active Honeypot Defense)
+// ==============================================================================
+const BLACKLIST_FILE = path.join(DATA_DIR, "blacklist.json");
+const activeBlacklist = new Map(); // ip -> { reason, time, expire }
+
+// 白名单防护 (本地回环与内网自愈永不封禁)
+const WHITELIST_IPS = new Set(["127.0.0.1", "::1", "localhost"]);
+
+// 1. 初始化并载入持久化黑名单
+function initBlacklist() {
+  try {
+    const data = readJSON(BLACKLIST_FILE, {});
+    const now = Date.now();
+    let hasExpired = false;
+    for (const [ip, item] of Object.entries(data)) {
+      if (item && item.expire && item.expire > now) {
+        activeBlacklist.set(ip, item);
+      } else {
+        hasExpired = true;
+      }
+    }
+    if (hasExpired) {
+      persistBlacklist();
+    }
+    console.log(`[Honeypot] Loaded ${activeBlacklist.size} active blacklisted IPs.`);
+  } catch (e) {
+    console.warn("[Honeypot] Failed to load blacklist:", e);
+  }
+}
+
+function persistBlacklist() {
+  try {
+    const obj = {};
+    for (const [ip, item] of activeBlacklist.entries()) {
+      obj[ip] = item;
+    }
+    writeJSON(BLACKLIST_FILE, obj);
+  } catch (e) {
+    console.warn("[Honeypot] Failed to persist blacklist:", e);
+  }
+}
+
+function isIpBlacklisted(ip) {
+  if (!ip || WHITELIST_IPS.has(ip)) return false;
+  const item = activeBlacklist.get(ip);
+  if (!item) return false;
+  if (Date.now() > item.expire) {
+    activeBlacklist.delete(ip);
+    persistBlacklist();
     return false;
   }
   return true;
 }
 
-function recordScannerStrike(ip) {
-  if (!ip) return;
-  scannerBlacklist.set(ip, Date.now() + 3600000);
-  console.warn(`[SecurityStrike] Blocked malicious scanner IP: ${ip} for 1 hour.`);
+function blacklistIP(ip, reason, durationMs = 86400000 * 3) {
+  if (!ip || WHITELIST_IPS.has(ip)) return;
+  const now = Date.now();
+  const record = {
+    ip,
+    reason: String(reason || "Triggered honeypot defense"),
+    time: new Date(now).toISOString(),
+    expire: now + durationMs
+  };
+  activeBlacklist.set(ip, record);
+  persistBlacklist();
+  console.warn(`[HONEYPOT STRIKE] Blacklisted attacker IP [${ip}] for ${Math.round(durationMs / 3600000)}h. Reason: ${reason}`);
+}
+
+// 2. 蜜罐诱饵路径检测矩阵 (任何普通访客绝不会访问的路径)
+const HONEYPOT_TRAP_REGEX = /^\/(?:wp-admin|wp-login|xmlrpc|phpmyadmin|pma|adminer|myadmin|actuator|telescope|eval-stdin|shell\.php|cmd\.php|webshell|atelier-trap-door|admin-probe-trap|\.env|\.git|\.aws|\.ssh)(?:[\/\?#]|$)/i;
+
+function isHoneypotTrap(pathname) {
+  if (!pathname) return false;
+  return HONEYPOT_TRAP_REGEX.test(pathname);
+}
+
+// 3. 恶意攻击 Payload 特征实时分析 (SQLi, 路径穿越, 远程代码执行)
+const ATTACK_PAYLOAD_REGEX = /(?:\.\.[\/\\]|%2e%2e|union\s+select|select\s+.*\s+from|<script|javascript:|base64_decode|eval\s*\(|bin\/sh|cmd\.exe|etc\/passwd|win\.ini)/i;
+
+function detectAttackPayload(urlObj) {
+  const fullSearch = urlObj.search || "";
+  const fullPath = urlObj.pathname || "";
+  if (ATTACK_PAYLOAD_REGEX.test(fullPath)) return "Path Injection / Traversal Attack";
+  if (ATTACK_PAYLOAD_REGEX.test(fullSearch)) return "Query String Injection Attack";
+  return null;
 }
 
 function getClientIP(req) {
@@ -1098,6 +1167,18 @@ function corsAllowedOrigin(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // Gate 0: 蜜罐黑名单即刻阻断 (0 耗费秒掐连接)
+  const clientIP = getClientIP(req);
+  if (isIpBlacklisted(clientIP)) {
+    res.writeHead(403, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Connection": "close",
+      "X-Atelier-Defense": "Honeypot-Blacklist"
+    });
+    res.end("403 Forbidden: Your IP has been blacklisted by Atelier Honeypot Defense System.");
+    try { req.socket.destroy(); } catch (e) {}
+    return;
+  }
   // v37 · 应用来源标记：一眼区分 Cloudflare 层 error 1000 与应用自身响应
   res.setHeader("X-Atelier-Origin", "app");
 
@@ -1121,6 +1202,33 @@ const server = http.createServer(async (req, res) => {
   const urlObj = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const pathname = urlObj.pathname;
   const method = req.method;
+
+  // Gate 1: 触碰主动防御蜜罐路径 -> 立即拉黑 3 天并掐断
+  if (isHoneypotTrap(pathname)) {
+    blacklistIP(clientIP, `触碰主动防御蜜罐: ${pathname}`, 86400000 * 3);
+    res.writeHead(403, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Connection": "close",
+      "X-Atelier-Defense": "Honeypot-Triggered"
+    });
+    res.end("403 Forbidden: Malicious probe detected. Your IP has been blacklisted.");
+    try { req.socket.destroy(); } catch (e) {}
+    return;
+  }
+
+  // Gate 2: 攻击载荷特征检测 (SQLi / LFI / XSS / RCE) -> 立即拉黑 3 天
+  const attackPayloadReason = detectAttackPayload(urlObj);
+  if (attackPayloadReason) {
+    blacklistIP(clientIP, `检测到高危攻击载荷: ${attackPayloadReason}`, 86400000 * 3);
+    res.writeHead(403, {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Connection": "close",
+      "X-Atelier-Defense": "Attack-Payload-Detected"
+    });
+    res.end("403 Forbidden: Attack payload detected. Your IP has been blacklisted.");
+    try { req.socket.destroy(); } catch (e) {}
+    return;
+  }
 
   // v37 · 链路诊断端点：不含任何主机指纹，只用于确认请求是否到达应用层
   if (pathname === "/api/ping" && method === "GET") {
@@ -1626,17 +1734,17 @@ if (pathname === "/api/messages") {
     if (method === "POST") {
       const body = await parseBody(req);
       
-      // Honeypot Protection: Bots usually auto-fill hidden input fields
-      if (body.website || body.honeypot || body.hp_token) {
-        console.warn(`[AntiSpam] Bot detected via honeypot from ${getClientIP(req)}`);
-        return sendJSON(req, res, 200, { ok: true, message: { id: "bot_ignored" } }); // Silent discard
+            // Honeypot Protection: Bots filling hidden bait inputs are immediately blacklisted
+      if (body.website || body.honeypot || body.hp_token || body.user_website || body.user_email_check) {
+        blacklistIP(clientIP, "触发留言板表单陷阱蜜罐 (Bot Trap)", 86400000 * 7); // 拉黑 7 天
+        res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
+        return res.end("403 Forbidden: Honeypot trap triggered.");
       }
 
       if (!body.content || !body.content.trim()) {
         return sendJSON(req, res, 400, { ok: false, error: "留言内容不能为空" });
       }
 
-      const clientIP = getClientIP(req);
       const rateCheck = checkMessageRateLimit(clientIP, body.content);
       if (!rateCheck.allowed) {
         if (rateCheck.retryAfter) res.setHeader("Retry-After", String(rateCheck.retryAfter));
@@ -1791,17 +1899,7 @@ if (pathname === "/api/messages") {
   }
 
   // v37 · 敏感路径明确 404：/.git/HEAD、/server.js 等不再误判为「有源码泄露」
-  const clientIP = getClientIP(req);
-  if (isIpBlocked(clientIP)) {
-    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
-    return res.end("Access Denied: Malicious activity detected.");
-  }
 
-  if (SCANNER_PROBES.test(pathname)) {
-    recordScannerStrike(clientIP);
-    res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8", "Connection": "close" });
-    return res.end("Forbidden.");
-  }
 
   const SENSITIVE_PATH = /^\/(?:\.git|\.env|\.ssh|data|scripts|systemd|node_modules)(?:\/|$)|^\/(?:server\.js|package(?:-lock)?\.json|curator_daemon\.py|watchdog_v2\.py|README\.md|config\.json)$/i;
   if (SENSITIVE_PATH.test(pathname) || /\/\.[^/]+/.test(pathname)) return notFound(req, res);
