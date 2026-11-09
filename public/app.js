@@ -5302,3 +5302,458 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 })();
 /* ======================== v41 · 完 ======================== */
+
+
+/* ======================== v48 · 东方文墨微交互与动态打字机系统 ======================== */
+(function initV48Suite() {
+  'use strict';
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // -------------------------------------------------------------------------
+  // 场景 1: Hero 顶部「文墨打字机」
+  // -------------------------------------------------------------------------
+  function initHeroTypewriter() {
+    var textEl = document.getElementById('hero-typewriter-text');
+    if (!textEl) return;
+
+    var phrases = [
+      "在微云之境，构筑自治的工程工作流与思想自留地。",
+      "真正的零外部依赖 · 日本竹尾素纸的宁静阅读心境。",
+      "探寻 Linux 内核、存储引擎与网络协议的底层之道。",
+      "让文字、代码与运行中的造物，在数字领地从容常驻。"
+    ];
+
+    if (reduceMotion) {
+      textEl.textContent = phrases[0];
+      return;
+    }
+
+    var pIdx = 0;
+    var charIdx = phrases[0].length;
+    var isDeleting = false;
+    var isPaused = false;
+    var timer = null;
+
+    var container = textEl.closest('.hero-subtitle') || textEl;
+    container.addEventListener('mouseenter', function () { isPaused = true; });
+    container.addEventListener('mouseleave', function () { isPaused = false; });
+
+    function tick() {
+      if (isPaused) {
+        timer = setTimeout(tick, 200);
+        return;
+      }
+
+      var currentPhrase = phrases[pIdx];
+
+      if (isDeleting) {
+        charIdx--;
+        textEl.textContent = currentPhrase.slice(0, charIdx);
+        if (charIdx <= 0) {
+          isDeleting = false;
+          pIdx = (pIdx + 1) % phrases.length;
+          timer = setTimeout(tick, 450);
+          return;
+        }
+        timer = setTimeout(tick, 32);
+      } else {
+        charIdx++;
+        textEl.textContent = currentPhrase.slice(0, charIdx);
+        if (charIdx >= currentPhrase.length) {
+          isDeleting = true;
+          timer = setTimeout(tick, 3600);
+          return;
+        }
+        var lastChar = currentPhrase[charIdx - 1];
+        var delay = (lastChar === '，' || lastChar === '·' || lastChar === '。') ? 180 : 65;
+        timer = setTimeout(tick, delay);
+      }
+    }
+
+    timer = setTimeout(function () {
+      isDeleting = true;
+      tick();
+    }, 3200);
+  }
+
+  // -------------------------------------------------------------------------
+  // 场景 2: 长文阅读「AI 墨心导读 · 现场提笔流式打字」
+  // -------------------------------------------------------------------------
+  var activeLensTyping = null;
+
+  function renderInkLens(article) {
+    var summaryEl = document.getElementById('reader-summary');
+    if (!summaryEl) return;
+
+    var oldCard = document.getElementById('ink-lens-card');
+    if (oldCard) oldCard.remove();
+    if (activeLensTyping) {
+      clearTimeout(activeLensTyping);
+      activeLensTyping = null;
+    }
+
+    var insights = article.insights;
+    if (!Array.isArray(insights) || insights.length === 0) return;
+
+    var card = document.createElement('div');
+    card.id = 'ink-lens-card';
+    card.className = 'ink-lens-card';
+    card.innerHTML = 
+      '<div class="ink-lens-header">' +
+        '<div class="ink-lens-title">' +
+          '<span class="ink-lens-icon">🏮</span>' +
+          '<span>墨心三得 · 30 秒认知透镜</span>' +
+        '</div>' +
+        '<button type="button" class="ink-lens-skip" id="ink-lens-skip" title="跳过打字动效，即刻全显">跳过墨痕 ↗</button>' +
+      '</div>' +
+      '<ul class="ink-lens-list" id="ink-lens-list"></ul>';
+
+    summaryEl.parentNode.insertBefore(card, summaryEl.nextSibling);
+
+    var listEl = card.querySelector('#ink-lens-list');
+    var skipBtn = card.querySelector('#ink-lens-skip');
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showInstantly() {
+      if (activeLensTyping) clearTimeout(activeLensTyping);
+      activeLensTyping = null;
+      listEl.innerHTML = insights.map(function (it) {
+        return '<li class="ink-lens-item">' +
+          '<span class="ink-lens-bullet">❖</span>' +
+          '<span class="ink-lens-text">' + esc(it) + '</span>' +
+        '</li>';
+      }).join('');
+      skipBtn.style.display = 'none';
+    }
+
+    skipBtn.addEventListener('click', showInstantly);
+
+    if (reduceMotion) {
+      showInstantly();
+      return;
+    }
+
+    var lineIdx = 0;
+    var cIdx = 0;
+
+    function prepareNextLine() {
+      if (lineIdx >= insights.length) {
+        skipBtn.style.display = 'none';
+        activeLensTyping = null;
+        return;
+      }
+      var li = document.createElement('li');
+      li.className = 'ink-lens-item';
+      li.innerHTML = '<span class="ink-lens-bullet">❖</span><span class="ink-lens-text"></span><span class="ink-lens-typing-cursor">|</span>';
+      listEl.appendChild(li);
+      var textSpan = li.querySelector('.ink-lens-text');
+      var cursorSpan = li.querySelector('.ink-lens-typing-cursor');
+      cIdx = 0;
+
+      function typeChar() {
+        var lineText = insights[lineIdx];
+        if (cIdx < lineText.length) {
+          textSpan.textContent += lineText[cIdx];
+          cIdx++;
+          var ch = lineText[cIdx - 1];
+          var delay = (ch === '：' || ch === '，' || ch === '；' || ch === '。') ? 85 : 25;
+          activeLensTyping = setTimeout(typeChar, delay);
+        } else {
+          cursorSpan.remove();
+          lineIdx++;
+          activeLensTyping = setTimeout(prepareNextLine, 180);
+        }
+      }
+
+      typeChar();
+    }
+
+    activeLensTyping = setTimeout(prepareNextLine, 280);
+  }
+
+  // -------------------------------------------------------------------------
+  // 场景 3: 全文检索（Ctrl+K）浮窗的「打字机动态引导与水墨晕染」
+  // -------------------------------------------------------------------------
+  function initEnhancedSearch() {
+    var openBtn = document.getElementById('btn-open-search');
+    var modal = document.getElementById('search-modal');
+    var input = document.getElementById('search-input');
+    var resultsList = document.getElementById('search-results-list');
+    if (!modal || !input || !resultsList) return;
+
+    if (openBtn) {
+      openBtn.addEventListener('click', function () {
+        if (typeof openSearchModal === 'function') openSearchModal();
+      });
+    }
+
+    var placeholders = [
+      '键入 "零拷贝" 检索内核 I/O ...',
+      '键入 "LSM-Tree" 检索存储引擎 ...',
+      '键入 "TLS 1.3" 检索网络安全 ...',
+      '键入 "单体架构" 检索系统退火 ...',
+      '键入 "布隆过滤器" 检索海量去重 ...',
+      '键入 "微服务" 检索 gRPC 协议 ...'
+    ];
+
+    var phIdx = 0;
+    var phChar = 0;
+    var phDeleting = false;
+    var phTimer = null;
+
+    function tickPlaceholder() {
+      if (document.activeElement === input && input.value) {
+        phTimer = setTimeout(tickPlaceholder, 500);
+        return;
+      }
+      var cur = placeholders[phIdx];
+      if (phDeleting) {
+        phChar--;
+        input.setAttribute('placeholder', cur.slice(0, phChar));
+        if (phChar <= 0) {
+          phDeleting = false;
+          phIdx = (phIdx + 1) % placeholders.length;
+          phTimer = setTimeout(tickPlaceholder, 400);
+          return;
+        }
+        phTimer = setTimeout(tickPlaceholder, 30);
+      } else {
+        phChar++;
+        input.setAttribute('placeholder', cur.slice(0, phChar));
+        if (phChar >= cur.length) {
+          phDeleting = true;
+          phTimer = setTimeout(tickPlaceholder, 2800);
+          return;
+        }
+        phTimer = setTimeout(tickPlaceholder, 60);
+      }
+    }
+
+    if (!reduceMotion) {
+      tickPlaceholder();
+    }
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightText(text, query) {
+      if (!query || !text) return esc(text || '');
+      var escQ = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var regex = new RegExp('(' + escQ + ')', 'gi');
+      return esc(text).replace(regex, '<mark class="ink-highlight">$1</mark>');
+    }
+
+    var selectedIdx = -1;
+
+    window.runSearch = function(query) {
+      var q = (query || '').trim().toLowerCase();
+      selectedIdx = -1;
+
+      if (!q) {
+        resultsList.innerHTML = '<div class="search-hint">输入文章标题、摘要、段落深度内容或闪念关键字...<br><span style="font-size:0.75rem;opacity:0.7;margin-top:6px;display:inline-block;">支持 ↑ ↓ 键选择，Enter 直达，Esc 退出</span></div>';
+        return;
+      }
+
+      var allArticles = Array.isArray(window.articles) ? window.articles : [];
+      var allMoments = Array.isArray(window.moments) ? window.moments : [];
+
+      var matchedArticles = [];
+      allArticles.forEach(function (a) {
+        var titleMatch = (a.title && a.title.toLowerCase().indexOf(q) !== -1);
+        var summaryMatch = (a.summary && a.summary.toLowerCase().indexOf(q) !== -1);
+        var catMatch = (a.category && a.category.toLowerCase().indexOf(q) !== -1);
+        var contentSnippet = '';
+
+        if (!titleMatch && !summaryMatch && a.content) {
+          var stripped = a.content.replace(/<[^>]+>/g, ' ');
+          var idx = stripped.toLowerCase().indexOf(q);
+          if (idx !== -1) {
+            var start = Math.max(0, idx - 25);
+            var end = Math.min(stripped.length, idx + q.length + 35);
+            contentSnippet = (start > 0 ? '...' : '') + stripped.slice(start, end) + (end < stripped.length ? '...' : '');
+          }
+        }
+
+        if (titleMatch || summaryMatch || catMatch || contentSnippet) {
+          matchedArticles.push({ article: a, snippet: contentSnippet || a.summary });
+        }
+      });
+
+      var matchedMoments = allMoments.filter(function (m) {
+        return (m.content && m.content.toLowerCase().indexOf(q) !== -1) ||
+               (m.tag && m.tag.toLowerCase().indexOf(q) !== -1);
+      });
+
+      if (matchedArticles.length === 0 && matchedMoments.length === 0) {
+        resultsList.innerHTML = '<div class="search-hint">未检索到“' + esc(q) + '”相关的墨痕，不妨换个词试试</div>';
+        return;
+      }
+
+      var html = '';
+      matchedArticles.forEach(function (item, i) {
+        var a = item.article;
+        html += 
+          '<div class="search-result-item" data-index="' + i + '" data-type="article" data-id="' + a.id + '">' +
+            '<div class="sr-title">' + highlightText(a.title, q) + '</div>' +
+            '<div class="sr-snippet" style="font-size:0.83rem;color:var(--text-muted);margin:4px 0 6px;line-height:1.5;">' + highlightText(item.snippet, q) + '</div>' +
+            '<div class="sr-meta">' +
+              '<span>文墨 · ' + (a.category || '手记') + '</span>' +
+              '<span>' + (a.date || '') + '</span>' +
+            '</div>' +
+          '</div>';
+      });
+
+      var artCount = matchedArticles.length;
+      matchedMoments.forEach(function (m, i) {
+        html += 
+          '<div class="search-result-item" data-index="' + (artCount + i) + '" data-type="moment" data-id="' + m.id + '">' +
+            '<div class="sr-title">' + highlightText(m.content.slice(0, 90), q) + '...</div>' +
+            '<div class="sr-meta">' +
+              '<span>微语 · #' + (m.tag || '随想') + '</span>' +
+              '<span>' + (typeof formatRelativeTime === 'function' ? formatRelativeTime(m.time) : '') + '</span>' +
+            '</div>' +
+          '</div>';
+      });
+
+      resultsList.innerHTML = html;
+
+      resultsList.querySelectorAll('.search-result-item').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var type = el.getAttribute('data-type');
+          var id = el.getAttribute('data-id');
+          if (typeof closeSearchModal === 'function') closeSearchModal();
+          if (type === 'article') {
+            var target = allArticles.find(function (a) { return a.id === id; });
+            if (target && typeof openReader === 'function') openReader(target);
+          } else if (type === 'moment') {
+            var sec = document.getElementById('moments');
+            if (sec) sec.scrollIntoView({ behavior: 'smooth' });
+          }
+        });
+      });
+    };
+
+    input.addEventListener('keydown', function (e) {
+      var items = resultsList.querySelectorAll('.search-result-item');
+      if (items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedIdx = (selectedIdx + 1) % items.length;
+        updateSelection(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedIdx = (selectedIdx - 1 + items.length) % items.length;
+        updateSelection(items);
+      } else if (e.key === 'Enter' && selectedIdx >= 0 && selectedIdx < items.length) {
+        e.preventDefault();
+        items[selectedIdx].click();
+      }
+    });
+
+    function updateSelection(items) {
+      items.forEach(function (item, i) {
+        if (i === selectedIdx) {
+          item.classList.add('is-selected');
+          item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          item.classList.remove('is-selected');
+        }
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 场景 4: 右侧「书籍式墨线折痕流体目录」
+  // -------------------------------------------------------------------------
+  function enhanceTocWithFluidInk(headings, desktopTocRail, scrollContainer) {
+    if (!desktopTocRail || !scrollContainer || headings.length < 2) return;
+
+    var track = desktopTocRail.querySelector('.ink-crease-track');
+    if (!track) {
+      var railWrap = desktopTocRail.querySelector('.reader-toc-rail-wrap') || desktopTocRail;
+      track = document.createElement('div');
+      track.className = 'ink-crease-track';
+      track.innerHTML = '<div class="ink-fluid-fill" id="ink-fluid-fill"></div><div class="ink-drop-marker" id="ink-drop-marker"></div>';
+      railWrap.appendChild(track);
+    }
+
+    var fillEl = document.getElementById('ink-fluid-fill');
+    var markerEl = document.getElementById('ink-drop-marker');
+    var tocItems = desktopTocRail.querySelectorAll('.reader-toc-item');
+
+    function onScroll() {
+      var scrollTop = scrollContainer.scrollTop;
+      var scrollHeight = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+      if (scrollHeight <= 0) return;
+
+      var progress = Math.min(1, Math.max(0, scrollTop / scrollHeight));
+      if (fillEl) fillEl.style.height = (progress * 100) + '%';
+      if (markerEl) markerEl.style.top = (progress * 100) + '%';
+
+      var activeHeadingIndex = 0;
+      headings.forEach(function (h, idx) {
+        var top = h.offsetTop - scrollContainer.offsetTop;
+        if (scrollTop >= top - 120) {
+          activeHeadingIndex = idx;
+        }
+      });
+
+      tocItems.forEach(function (item, idx) {
+        if (idx === activeHeadingIndex) {
+          item.classList.add('is-active');
+        } else {
+          item.classList.remove('is-active');
+        }
+      });
+    }
+
+    if (scrollContainer._inkFluidScroll) {
+      scrollContainer.removeEventListener('scroll', scrollContainer._inkFluidScroll);
+    }
+    scrollContainer._inkFluidScroll = onScroll;
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true });
+    setTimeout(onScroll, 60);
+  }
+
+  // -------------------------------------------------------------------------
+  // 挂钩现有的渲染与启动入口
+  // -------------------------------------------------------------------------
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      initHeroTypewriter();
+      initEnhancedSearch();
+    });
+  } else {
+    initHeroTypewriter();
+    initEnhancedSearch();
+  }
+
+  var origRenderReader = window.renderReader;
+  window.renderReader = function(article) {
+    if (typeof origRenderReader === 'function') {
+      origRenderReader.apply(this, arguments);
+    }
+    try {
+      renderInkLens(article);
+      var scrollContainer = document.getElementById('drawer-scroll-container') || document.querySelector('.drawer-content-scroll');
+      var desktopTocRail = document.getElementById('reader-desktop-sidebar');
+      var contentEl = document.getElementById('reader-content');
+      if (contentEl && desktopTocRail && scrollContainer) {
+        setTimeout(function () {
+          var headings = contentEl.querySelectorAll('h2, h3');
+          enhanceTocWithFluidInk(headings, desktopTocRail, scrollContainer);
+        }, 150);
+      }
+    } catch (e) {
+      console.warn('[v48 renderReader error]', e);
+    }
+  };
+
+})();
+/* ======================== v48 · 完 ======================== */
