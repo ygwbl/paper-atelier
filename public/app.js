@@ -5501,13 +5501,53 @@ window.addEventListener('DOMContentLoaded', () => {
     if (!bannerEl) return;
 
     var textEl = document.getElementById('hero-typewriter-text');
+    var brushEl = document.getElementById('hero-typewriter-brush');
     var refreshBtn = document.getElementById('hero-typewriter-refresh');
+    var brushToggleBtn = document.getElementById('hero-brush-mode-toggle');
 
-    // 结构自愈：自动适配并恢复文墨打字机 Banner
-    if (!textEl) {
-      bannerEl.innerHTML = '<div class="typewriter-seal-tag" aria-hidden="true"><span class="seal-glyph">墨</span><span class="seal-text">引</span></div><div class="typewriter-content-wrap"><span class="typewriter-text" id="hero-typewriter-text"></span><span class="typewriter-cursor" aria-hidden="true"></span></div><button type="button" class="typewriter-refresh-btn" id="hero-typewriter-refresh" title="点击换一笺" aria-label="换一笺"><svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg><span class="refresh-text">换一笺</span></button>';
+    // 结构自愈：自动适配并恢复文墨打字机 Banner (包含紫毫毛笔与提笔试墨按钮)
+    if (!textEl || !brushEl) {
+      bannerEl.innerHTML = 
+        '<div class="typewriter-seal-tag" aria-hidden="true"><span class="seal-glyph">墨</span><span class="seal-text">引</span></div>' +
+        '<div class="typewriter-content-wrap">' +
+          '<span class="typewriter-text" id="hero-typewriter-text"></span>' +
+          '<span class="typewriter-brush" id="hero-typewriter-brush" aria-hidden="true">' +
+            '<svg class="brush-icon" viewBox="0 0 24 48" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+              '<defs>' +
+                '<linearGradient id="brushShaftGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4e3d33"/><stop offset="45%" stop-color="#2d221c"/><stop offset="85%" stop-color="#1b1411"/><stop offset="100%" stop-color="#0d0a08"/></linearGradient>' +
+                '<linearGradient id="brushRingGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c99e42"/><stop offset="50%" stop-color="#f5e1a4"/><stop offset="100%" stop-color="#a88028"/></linearGradient>' +
+                '<linearGradient id="brushHairGrad" x1="0%" y1="0%" x2="50%" y2="100%"><stop offset="0%" stop-color="#5a4235"/><stop offset="45%" stop-color="#30221a"/><stop offset="85%" stop-color="#140f0c"/><stop offset="100%" stop-color="#080605"/></linearGradient>' +
+                '<radialGradient id="brushInkGlow" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(168, 50, 43, 0.85)"/><stop offset="60%" stop-color="rgba(21, 16, 14, 0.95)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>' +
+              '</defs>' +
+              '<path d="M14 2 L20 4 L11 26 L8 25 Z" fill="url(#brushShaftGrad)"/>' +
+              '<path d="M19 3 L21 4 L20 6 L18 5 Z" fill="#665043" opacity="0.6"/>' +
+              '<path d="M12.8 19 L15 19.8 L14.2 21.8 L12 21 Z" fill="url(#brushRingGrad)"/>' +
+              '<path d="M10.8 24 L13.2 25 L10.2 30 L8 29 Z" fill="url(#brushRingGrad)"/>' +
+              '<path d="M10.2 30 C11.5 33, 9.5 39, 4 45 C4.5 38, 7.5 33, 8 29 Z" fill="url(#brushHairGrad)"/>' +
+              '<circle cx="3.8" cy="44.8" r="1.6" fill="#0d0a08"/>' +
+              '<circle cx="3.8" cy="44.8" r="3.2" fill="url(#brushInkGlow)" opacity="0.65"/>' +
+            '</svg>' +
+            '<span class="brush-ink-ripple"></span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="typewriter-actions">' +
+          '<button type="button" class="typewriter-brush-mode-btn" id="hero-brush-mode-toggle" title="提笔自由挥毫" aria-label="提笔试墨">' +
+            '<svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>' +
+            '</svg>' +
+            '<span class="mode-text">提笔</span>' +
+          '</button>' +
+          '<button type="button" class="typewriter-refresh-btn" id="hero-typewriter-refresh" title="点击换一笺" aria-label="换一笺">' +
+            '<svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>' +
+            '</svg>' +
+            '<span class="refresh-text">换一笺</span>' +
+          '</button>' +
+        '</div>';
       textEl = document.getElementById('hero-typewriter-text');
+      brushEl = document.getElementById('hero-typewriter-brush');
       refreshBtn = document.getElementById('hero-typewriter-refresh');
+      brushToggleBtn = document.getElementById('hero-brush-mode-toggle');
     }
 
     if (reduceMotion) {
@@ -5528,6 +5568,9 @@ window.addEventListener('DOMContentLoaded', () => {
     function nextPhrase() {
       if (isDeleting) return;
       isDeleting = true;
+      if (brushEl) {
+        brushEl.className = 'typewriter-brush is-deleting';
+      }
       if (timer) clearTimeout(timer);
       tick();
     }
@@ -5539,11 +5582,11 @@ window.addEventListener('DOMContentLoaded', () => {
       });
     }
     bannerEl.addEventListener('click', function(e) {
-      if (e.target && (e.target.closest('#hero-typewriter-refresh') || e.target.tagName === 'BUTTON')) return;
+      if (e.target && (e.target.closest('#hero-typewriter-refresh') || e.target.closest('#hero-brush-mode-toggle') || e.target.tagName === 'BUTTON')) return;
       nextPhrase();
     });
 
-    // 水墨逐字落笔晕染渲染器
+    // 水墨逐字落笔扫润渲染器 (毛笔提按与笔势展开)
     function renderInkChars(phrase, count, isFresh) {
       var frag = document.createDocumentFragment();
       for (var i = 0; i < count; i++) {
@@ -5554,11 +5597,23 @@ window.addEventListener('DOMContentLoaded', () => {
       }
       textEl.innerHTML = '';
       textEl.appendChild(frag);
+
+      // 毛笔动作编排：落笔顿挫提按
+      if (brushEl) {
+        if (isFresh) {
+          brushEl.className = 'typewriter-brush';
+          void brushEl.offsetWidth; // 触发 reflow 重带动效
+          brushEl.className = 'typewriter-brush is-writing';
+        } else if (isDeleting) {
+          brushEl.className = 'typewriter-brush is-deleting';
+        }
+      }
     }
 
     function tick() {
       if (!document.getElementById('hero-typewriter-text')) {
         textEl = document.getElementById('hero-typewriter-text');
+        brushEl = document.getElementById('hero-typewriter-brush');
         if (!textEl) return;
       }
 
@@ -5575,6 +5630,7 @@ window.addEventListener('DOMContentLoaded', () => {
         if (charIdx <= 0) {
           isDeleting = false;
           pIdx = (pIdx + 1) % heroPhrases.length;
+          if (brushEl) brushEl.className = 'typewriter-brush';
           timer = setTimeout(tick, 400);
           return;
         }
@@ -5584,6 +5640,8 @@ window.addEventListener('DOMContentLoaded', () => {
         renderInkChars(currentPhrase, charIdx, true);
         if (charIdx >= currentPhrase.length) {
           isDeleting = true;
+          // 整句完成时，毛笔悬腕品题呼吸
+          if (brushEl) brushEl.className = 'typewriter-brush is-hovering';
           timer = setTimeout(tick, 4500); // 完整句停驻 4.5 秒供从容品读
           return;
         }
@@ -5604,6 +5662,191 @@ window.addEventListener('DOMContentLoaded', () => {
     isDeleting = false;
     if (timer) clearTimeout(timer);
     timer = setTimeout(tick, 120);
+
+    // 初始化自由挥毫互动墨池
+    initFreehandCalligraphy();
+  }
+
+  // -------------------------------------------------------------------------
+  // 场景 1.5: 纸境墨池 · 真·毛笔自由挥毫画卷 (Freehand Calligraphy Pad)
+  // -------------------------------------------------------------------------
+  function initFreehandCalligraphy() {
+    var toggleBtn = document.getElementById('hero-brush-mode-toggle');
+    if (!toggleBtn) return;
+
+    var modal = document.getElementById('calligraphy-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'calligraphy-modal';
+      modal.className = 'calligraphy-modal-wrap';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-label', '纸境墨池 · 挥毫试墨');
+      modal.innerHTML = 
+        '<div class="calligraphy-modal-backdrop" id="c-backdrop"></div>' +
+        '<div class="calligraphy-stage-card">' +
+          '<div class="calligraphy-header">' +
+            '<div class="calligraphy-title-row">' +
+              '<span class="calligraphy-seal-badge">墨池</span>' +
+              '<h3 class="calligraphy-heading">纸境墨池 · 提笔挥毫</h3>' +
+              '<span class="calligraphy-subtip">提按自如 · 飞白入纸</span>' +
+            '</div>' +
+            '<div class="calligraphy-tools">' +
+              '<button type="button" class="c-tool-btn is-active" id="c-tool-ink" title="松烟浓墨"><span class="c-color-dot dot-ink"></span>松烟墨</button>' +
+              '<button type="button" class="c-tool-btn" id="c-tool-seal" title="朱砂点赤"><span class="c-color-dot dot-seal"></span>朱砂印</button>' +
+              '<button type="button" class="c-tool-btn" id="c-tool-clear" title="清宣归位">清笺</button>' +
+              '<button type="button" class="c-tool-close-btn" id="c-tool-close" title="收卷归座" aria-label="关闭">&times;</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="calligraphy-canvas-wrap" id="c-wrap">' +
+            '<canvas id="calligraphy-canvas"></canvas>' +
+            '<div class="calligraphy-watermark">纸 境 留 墨</div>' +
+          '</div>' +
+          '<div class="calligraphy-footer">' +
+            '<span class="calligraphy-foot-hint">以指或鼠标悬腕挥毫 · 快则飞白收细 · 慢则入木沉深</span>' +
+            '<button type="button" class="calligraphy-save-btn" id="c-tool-save">落款钤印</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(modal);
+    }
+
+    var canvas = document.getElementById('calligraphy-canvas');
+    var wrap = document.getElementById('c-wrap');
+    var ctx = canvas.getContext('2d');
+    var currentColor = '#1f1c18';
+    var isDrawing = false;
+    var lastPoint = null;
+    var lastWidth = 6;
+    var dpr = window.devicePixelRatio || 1;
+
+    function resizeCanvas() {
+      if (!wrap || !canvas) return;
+      var r = wrap.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(r.width * dpr);
+      canvas.height = Math.round(r.height * dpr);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
+
+    function openModal() {
+      modal.classList.add('is-open');
+      setTimeout(resizeCanvas, 50);
+    }
+    function closeModal() {
+      modal.classList.remove('is-open');
+    }
+
+    toggleBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openModal();
+    });
+
+    document.getElementById('c-tool-close').addEventListener('click', closeModal);
+    document.getElementById('c-backdrop').addEventListener('click', closeModal);
+
+    var inkBtn = document.getElementById('c-tool-ink');
+    var sealBtn = document.getElementById('c-tool-seal');
+    var clearBtn = document.getElementById('c-tool-clear');
+    var saveBtn = document.getElementById('c-tool-save');
+
+    inkBtn.addEventListener('click', function() {
+      currentColor = '#1f1c18';
+      inkBtn.classList.add('is-active');
+      sealBtn.classList.remove('is-active');
+    });
+
+    sealBtn.addEventListener('click', function() {
+      currentColor = '#9e2a2b';
+      sealBtn.classList.add('is-active');
+      inkBtn.classList.remove('is-active');
+    });
+
+    clearBtn.addEventListener('click', function() {
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+    });
+
+    saveBtn.addEventListener('click', function() {
+      try {
+        var a = document.createElement('a');
+        a.download = '纸境墨宝_' + Date.now() + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      } catch(e) {}
+    });
+
+    // 经典水墨毛笔书法压力与速度插值算法 (Velocity Dynamics & Quadratic Bezier)
+    function getPos(e) {
+      var r = canvas.getBoundingClientRect();
+      var clientX = e.clientX, clientY = e.clientY;
+      if (e.touches && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+      return {
+        x: clientX - r.left,
+        y: clientY - r.top,
+        time: Date.now()
+      };
+    }
+
+    function startStroke(e) {
+      e.preventDefault();
+      isDrawing = true;
+      lastPoint = getPos(e);
+      lastWidth = 5;
+      // 湿墨落笔墨痕微晕
+      ctx.fillStyle = currentColor;
+      ctx.beginPath();
+      ctx.arc(lastPoint.x, lastPoint.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function moveStroke(e) {
+      if (!isDrawing || !lastPoint) return;
+      e.preventDefault();
+      var current = getPos(e);
+      var dist = Math.hypot(current.x - lastPoint.x, current.y - lastPoint.y);
+      var dt = Math.max(1, current.time - lastPoint.time);
+      var speed = dist / dt;
+
+      // 速度越快笔画越细(出锋)，慢则沉厚入纸
+      var targetWidth = Math.max(1.8, Math.min(10, 10 - speed * 4));
+      var width = lastWidth * 0.65 + targetWidth * 0.35;
+
+      ctx.save();
+      ctx.strokeStyle = currentColor;
+      ctx.fillStyle = currentColor;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = width;
+
+      // 二次贝塞尔平滑插值
+      ctx.beginPath();
+      ctx.moveTo(lastPoint.x, lastPoint.y);
+      var midX = (lastPoint.x + current.x) / 2;
+      var midY = (lastPoint.y + current.y) / 2;
+      ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
+      ctx.stroke();
+      ctx.restore();
+
+      lastPoint = current;
+      lastWidth = width;
+    }
+
+    function endStroke(e) {
+      if (!isDrawing) return;
+      isDrawing = false;
+      lastPoint = null;
+    }
+
+    canvas.addEventListener('mousedown', startStroke);
+    canvas.addEventListener('mousemove', moveStroke);
+    window.addEventListener('mouseup', endStroke);
+
+    canvas.addEventListener('touchstart', startStroke, { passive: false });
+    canvas.addEventListener('touchmove', moveStroke, { passive: false });
+    window.addEventListener('touchend', endStroke);
   }
 
   // -------------------------------------------------------------------------

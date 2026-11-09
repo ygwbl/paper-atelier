@@ -9431,61 +9431,137 @@ html { scroll-behavior:smooth; }
   white-space: nowrap;
 }
 
-/* 水墨晕开字符动画 (Ink Diffusion Bleed) */
+/* 水墨真笔书写入纸动效 (True Calligraphic Stroke Sweep) */
 .ink-char {
   display: inline-block;
   opacity: 1;
 }
 
 .ink-char.ink-fresh {
-  animation: inkBleedAnim 0.32s cubic-bezier(0.18, 0.85, 0.3, 1) forwards;
+  display: inline-block;
+  animation: inkBrushStrokeSweep 0.36s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: left bottom;
 }
 
-@keyframes inkBleedAnim {
+@keyframes inkBrushStrokeSweep {
   0% {
-    opacity: 0.15;
-    filter: blur(2.6px);
-    transform: translateY(-1.5px) scale(0.96);
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    opacity: 0.25;
+    filter: blur(1.8px) contrast(1.3);
+    transform: translateY(1.5px) scale(0.97);
   }
-  45% {
+  40% {
+    clip-path: polygon(0 0, 72% 0, 52% 100%, 0 100%);
     opacity: 0.92;
-    filter: blur(0.6px);
-    transform: translateY(-0.5px) scale(1.01);
+    filter: blur(0.5px);
+    transform: translateY(0) scale(1.01);
   }
   100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
     opacity: 1;
     filter: blur(0);
     transform: translateY(0) scale(1);
   }
 }
 
-/* 东方朱砂笔锋柱光�?(Vermilion Brush Tip Cursor) */
-.hero-typewriter-banner .typewriter-cursor {
-  display: inline-block !important;
-  width: 2.5px !important;
-  height: 1.15em !important;
-  background: var(--brand-seal, #9e2a2b) !important;
-  box-shadow: 0 0 6px rgba(158, 42, 43, 0.45) !important;
-  margin-left: 4px !important;
-  vertical-align: text-bottom !important;
-  border-radius: 1.5px !important;
-  animation: inkCursorBlink 1.05s ease-in-out infinite !important;
+/* 东方紫毫毛笔执毫系统 (The Floating Calligraphy Brush) */
+.typewriter-brush {
+  display: inline-flex;
+  position: relative;
+  align-items: flex-end;
+  width: 16px;
+  height: 32px;
+  margin-left: 3px;
+  vertical-align: -6px;
+  pointer-events: none;
   user-select: none;
+  flex-shrink: 0;
+  transform-origin: 3.5px 30px;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.typewriter-brush .brush-icon {
+  width: 16px;
+  height: 32px;
+  filter: drop-shadow(1px 2px 2.5px rgba(0, 0, 0, 0.25));
+  overflow: visible;
+}
+
+/* 书写时落笔下按提锋动作 */
+.typewriter-brush.is-writing {
+  animation: brushStrokePress 0.26s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+@keyframes brushStrokePress {
+  0% {
+    transform: translate(1px, -3.5px) rotate(5deg);
+  }
+  40% {
+    transform: translate(-1.5px, 2px) rotate(-8deg) scale(0.95);
+  }
+  75% {
+    transform: translate(0.5px, -1px) rotate(2deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* 停驻悬腕呼吸姿态 */
+.typewriter-brush.is-hovering {
+  animation: brushWristHover 2.4s ease-in-out infinite;
+}
+
+@keyframes brushWristHover {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(0.5px, -3px) rotate(2.5deg);
+  }
+}
+
+/* 退格回锋姿态 */
+.typewriter-brush.is-deleting {
+  transform: translate(2px, -4px) rotate(10deg) scale(0.92);
+  opacity: 0.75;
+}
+
+/* 笔尖入纸水墨微晕 */
+.typewriter-brush .brush-ink-ripple {
+  position: absolute;
+  left: 1.5px;
+  bottom: 0.5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--text-title, #1f1c18) 0%, rgba(31, 28, 24, 0) 70%);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.5);
+}
+
+.typewriter-brush.is-writing .brush-ink-ripple {
+  animation: inkTipBloom 0.26s ease-out;
+}
+
+@keyframes inkTipBloom {
+  0% { opacity: 0.85; transform: scale(0.4); }
+  50% { opacity: 0.4; transform: scale(1.6); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+/* 操作按钮容器 */
+.typewriter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
   flex-shrink: 0;
 }
 
-@keyframes inkCursorBlink {
-  0%, 100% {
-    opacity: 1;
-    transform: scaleY(1);
-  }
-  50% {
-    opacity: 0.15;
-    transform: scaleY(0.7);
-  }
-}
-
-/* 换一笺微按钮 */
+/* 提笔挥毫与换一笺按钮 */
+.typewriter-brush-mode-btn,
 .typewriter-refresh-btn {
   display: inline-flex;
   align-items: center;
@@ -9501,9 +9577,10 @@ html { scroll-behavior:smooth; }
   transition: all 0.25s ease;
   user-select: none;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.72;
 }
 
+.typewriter-brush-mode-btn:hover,
 .typewriter-refresh-btn:hover {
   opacity: 1;
   color: var(--brand-seal);
@@ -9511,14 +9588,231 @@ html { scroll-behavior:smooth; }
   border-color: rgba(158, 42, 43, 0.18);
 }
 
+.typewriter-brush-mode-btn .mode-icon,
 .typewriter-refresh-btn .refresh-icon {
   width: 12px;
   height: 12px;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.typewriter-brush-mode-btn:hover .mode-icon {
+  transform: rotate(-15deg) scale(1.15);
+}
+
 .typewriter-refresh-btn:hover .refresh-icon {
   transform: rotate(180deg);
+}
+
+/* ==========================================================================
+   纸境墨池 · 自由挥毫画卷 (Freehand Calligraphy Modal Pad)
+   ========================================================================== */
+.calligraphy-modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.calligraphy-modal-wrap.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.calligraphy-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 18, 16, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.calligraphy-stage-card {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  background: var(--bg-card, #fdfcf9);
+  border: 1px solid color-mix(in srgb, var(--border-line) 80%, var(--brand-seal) 20%);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(12px) scale(0.98);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.calligraphy-modal-wrap.is-open .calligraphy-stage-card {
+  transform: translateY(0) scale(1);
+}
+
+.calligraphy-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.2rem;
+  border-bottom: 1px solid var(--border-line);
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--bg-subtle) 6%);
+}
+
+.calligraphy-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.calligraphy-seal-badge {
+  display: inline-block;
+  padding: 0.12rem 0.38rem;
+  background: var(--brand-seal, #9e2a2b);
+  color: #fff9f2;
+  font-family: var(--font-serif);
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+}
+
+.calligraphy-heading {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-title);
+}
+
+.calligraphy-subtip {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.25rem;
+}
+
+.calligraphy-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.c-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.24rem 0.6rem;
+  font-size: 0.78rem;
+  font-family: var(--font-serif);
+  border: 1px solid var(--border-line);
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.c-tool-btn:hover,
+.c-tool-btn.is-active {
+  border-color: var(--brand-seal);
+  color: var(--brand-seal);
+  background: rgba(158, 42, 43, 0.06);
+}
+
+.c-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.c-color-dot.dot-ink { background: #1f1c18; }
+.c-color-dot.dot-seal { background: #9e2a2b; }
+
+.c-tool-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.c-tool-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text-title);
+}
+
+.calligraphy-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background: var(--bg-card, #fdfcf9);
+  cursor: crosshair;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-line);
+}
+
+#calligraphy-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.calligraphy-watermark {
+  position: absolute;
+  right: 1.2rem;
+  bottom: 1rem;
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  color: var(--border-line);
+  pointer-events: none;
+  user-select: none;
+}
+
+.calligraphy-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.2rem;
+  background: color-mix(in srgb, var(--bg-card) 96%, var(--bg-subtle) 4%);
+}
+
+.calligraphy-foot-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.calligraphy-save-btn {
+  padding: 0.32rem 0.95rem;
+  background: var(--brand-seal, #9e2a2b);
+  color: #fff9f2;
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(158, 42, 43, 0.25);
+}
+
+.calligraphy-save-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(158, 42, 43, 0.35);
 }
 
 /* 2. 3D 舞台质感增强 */
