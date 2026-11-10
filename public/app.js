@@ -113,14 +113,15 @@ let currentCategory = 'all';
 let isAuthenticated = false;
 let editingArticleId = null;
 
-// Lightweight Markdown to HTML Parser
+// Lightweight Markdown to HTML Parser (v62 · 全要素文墨引擎：画卷图框、竹尾宣纸表格、图注灯箱、东方任务清单)
 function parseMarkdown(md) {
   if (!md) return '';
-  // 1. 深度安全剥离：阻断 script 脚本、敏感嵌入标签、内联 on* 事件 (如 onerror / onload)
+  // 1. 深度安全剥离：阻断 script 脚本、敏感嵌入标签、内联 on* 事件与非法伪协议
   let html = md
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<\/?(?:iframe|object|embed|form|input|button|base|meta|link|style)\b[^>]*>/gi, '')
-    .replace(/\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    .replace(/\s+on[a-zA-Z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/href\s*=\s*["']?\s*(?:javascript|vbscript|data(?!:image)):/gi, 'href="#blocked-');
 
   // 1. Normalize legacy or embedded HTML code blocks into markdown fences
   html = html.replace(/<p[^>]*>\s*<code\s+class="lang-([^"]+)">([\s\S]*?)<\/code>\s*<\/pre>/gi, (m, lang, code) => `\n\n\`\`\`${lang}\n${code.trim()}\n\`\`\`\n\n`);
@@ -142,12 +143,12 @@ function parseMarkdown(md) {
             <span class="mac-dot mac-dot-max"></span>
           </div>
           <span class="code-lang-tag">${cleanLang}</span>
-          <button class="code-copy-btn" data-code="${rawAttr}" title="复制代码" aria-label="复制代码">
+          <button class="code-copy-btn" data-code="${rawAttr}" title="拓印代码" aria-label="拓印代码">
             <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
-            <span>复制</span>
+            <span>拓印</span>
           </button>
         </div>
         <pre class="code-content"><code class="lang-${lang}">${cleanCode}</code></pre>
@@ -156,10 +157,37 @@ function parseMarkdown(md) {
     return `\n\n${placeholder}\n\n`;
   });
 
-  // 3. Ensure blank line before ordered/unordered lists
+  // 3. Pre-process Markdown Tables (| 表头 | 表头 |)
+  const tableBlocks = [];
+  const tableRegex = /(?:(?:^|\n)\|[^\n]+\|\r?\n\|[-:\s|]+\|\r?\n(?:\|[^\n]+\|\r?\n?)+)/g;
+  html = html.replace(tableRegex, (match) => {
+    const lines = match.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return match;
+    const headerRow = lines[0].replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+    const alignRow = lines[1].replace(/^\||\|$/g, '').split('|').map(c => {
+      const s = c.trim();
+      if (s.startsWith(':') && s.endsWith(':')) return 'center';
+      if (s.endsWith(':')) return 'right';
+      return 'left';
+    });
+    const bodyRows = lines.slice(2).map(line => line.replace(/^\||\|$/g, '').split('|').map(c => c.trim()));
+
+    const thead = `<thead><tr>${headerRow.map((h, i) => `<th style="text-align:${alignRow[i] || 'left'}">${escapeHtml(h)}</th>`).join('')}</tr></thead>`;
+    const tbody = `<tbody>${bodyRows.map(row => `<tr>${row.map((cell, i) => `<td style="text-align:${alignRow[i] || 'left'}">${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+    const ph = `__TABLE_BLOCK_${tableBlocks.length}__`;
+    tableBlocks.push(`
+      <div class="reader-table-wrap">
+        <table class="reader-table">${thead}${tbody}</table>
+      </div>
+    `);
+    return `\n\n${ph}\n\n`;
+  });
+
+  // 4. Ensure blank line before ordered/unordered lists
   html = html.replace(/([^\n])\n(\s*(?:\d+\.|\-|\*)\s+)/g, '$1\n\n$2');
 
-  // 4. Headers with IDs for Table of Contents
+  // 5. Headers with IDs for Table of Contents
   let headingCount = 0;
   html = html.replace(/^#### (.*$)/gim, (m, title) => {
     headingCount++;
@@ -178,21 +206,27 @@ function parseMarkdown(md) {
     return `\n\n<h2 id="sec-h2-${headingCount}">${title}</h2>\n\n`;
   });
 
-  // 5. Blockquotes
+  // 6. Blockquotes
   html = html.replace(/^\> (.*$)/gim, '<blockquote><p>$1</p></blockquote>');
 
-  // 6. Inline code
+  // 7. Inline code
   html = html.replace(/`([^`]+)`/g, '<code class="reader-inline-code">$1</code>');
 
-  // 7. Bold & Italic
+  // 8. Bold & Italic
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
-  // 8. Horizontal rules
+  // 9. Horizontal rules
   html = html.replace(/^---$/gim, '\n\n<hr class="reader-hr">\n\n');
 
-  // 9. Process Lists via Placeholder Isolation (Prevents accidental <p> wrapping)
+  // 10. Process Lists via Placeholder Isolation (Includes Task Lists - [x] / - [ ])
   const listBlocks = [];
+  // Task list items
+  html = html.replace(/^\s*[\-\*]\s+\[([ xX])\]\s+(.*$)/gim, (m, checked, label) => {
+    const isDone = checked.toLowerCase() === 'x';
+    return `<li class="reader-task-item ${isDone ? 'is-done' : ''}"><span class="task-seal-box" aria-hidden="true">${isDone ? '✓' : ''}</span><span class="task-label">${label}</span></li>`;
+  });
+
   // Ordered lists
   html = html.replace(/^\s*(\d+)\.\s+(.*$)/gim, '<li class="reader-ol-item" data-num="$1">$2</li>');
   html = html.replace(/((?:<li class="reader-ol-item"[^>]*>.*?<\/li>\s*)+)/gis, (m, content) => {
@@ -201,21 +235,36 @@ function parseMarkdown(md) {
     return `\n\n${ph}\n\n`;
   });
 
-  // Unordered lists
+  // Unordered lists (and task lists)
   html = html.replace(/^\s*[\-\*]\s+(.*$)/gim, '<li class="reader-ul-item">$1</li>');
-  html = html.replace(/((?:<li class="reader-ul-item"[^>]*>.*?<\/li>\s*)+)/gis, (m, content) => {
+  html = html.replace(/((?:<li class="(?:reader-ul-item|reader-task-item)[^"]*"[^>]*>.*?<\/li>\s*)+)/gis, (m, content) => {
     const ph = `__LIST_BLOCK_${listBlocks.length}__`;
-    listBlocks.push(`<ul class="reader-unordered-list">\n${content.trim()}\n</ul>`);
+    const isTaskList = content.includes('reader-task-item');
+    listBlocks.push(`<ul class="${isTaskList ? 'reader-task-list' : 'reader-unordered-list'}">\n${content.trim()}\n</ul>`);
     return `\n\n${ph}\n\n`;
   });
 
-  // 10. Links
+  // 11. Markdown Images ![alt](url) -> 东方素纸装裱画框 + 点击大图全屏画卷灯箱
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (m, alt, url) => {
+    const rawUrl = url.trim();
+    const cleanUrl = /^(?:https?:\/\/|\/|data:image\/)/i.test(rawUrl) ? rawUrl : '#';
+    const cleanAlt = escapeHtml(alt.trim());
+    return `<figure class="reader-figure">
+      <div class="reader-img-wrap">
+        <img src="${cleanUrl}" alt="${cleanAlt}" loading="lazy" class="reader-zoomable-img" onclick="window.openImageLightbox && window.openImageLightbox(this.src, this.alt)" title="点击展卷细阅">
+        <span class="img-zoom-hint" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg> 展卷细阅</span>
+      </div>
+      ${cleanAlt ? `<figcaption class="reader-figcaption"><span class="fig-seal">图</span> ${cleanAlt}</figcaption>` : ''}
+    </figure>`;
+  });
+
+  // 12. Links [text](url)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, text, url) => {
     const cleanUrl = /^(?:https?:\/\/|\/|#|mailto:)/i.test(url.trim()) ? url.trim() : '#';
     return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer">${text}</a>`;
   });
 
-  // 11. Paragraphs with strict exclusions
+  // 13. Paragraphs with strict exclusions
   html = html.split(/\n{2,}/).map(para => {
     para = para.trim();
     if (!para) return '';
@@ -226,19 +275,26 @@ function parseMarkdown(md) {
         para.startsWith('<blockquote') || 
         para.startsWith('<hr') || 
         para.startsWith('<div') || 
+        para.startsWith('<figure') ||
         para.includes('__CODE_BLOCK_') ||
+        para.includes('__TABLE_BLOCK_') ||
         para.includes('__LIST_BLOCK_')) {
       return para;
     }
     return `<p class="reader-para">${para.replace(/\n/g, '<br>')}</p>`;
   }).join('\n\n');
 
-  // 12. Restore list blocks
+  // 14. Restore list blocks
   listBlocks.forEach((block, idx) => {
     html = html.replace(`__LIST_BLOCK_${idx}__`, block);
   });
 
-  // 13. Restore code blocks
+  // 15. Restore table blocks
+  tableBlocks.forEach((block, idx) => {
+    html = html.replace(`__TABLE_BLOCK_${idx}__`, block);
+  });
+
+  // 16. Restore code blocks
   codeBlocks.forEach((block, idx) => {
     html = html.replace(`__CODE_BLOCK_${idx}__`, block);
   });
@@ -948,7 +1004,7 @@ function renderReader(article) {
       const codeText = decodeURIComponent(btn.getAttribute('data-code') || '');
       navigator.clipboard.writeText(codeText).then(() => {
         btn.classList.add('copied');
-        btn.querySelector('span').textContent = '已复制 ✦';
+        btn.querySelector('span').textContent = '已拓印 ✓';
         setTimeout(() => {
           btn.classList.remove('copied');
           btn.querySelector('span').textContent = '复制';
@@ -4800,10 +4856,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   /* ── A. 3D 舞台 ───────────────────────────────────────────────────── */
   const SHEETS = [
-    { id: 'essays',    num: '01', title: '文墨', desc: '长文与技术沉淀' },
-    { id: 'moments',   num: '02', title: '闪念', desc: '随手记下的念头' },
-    { id: 'timeline',  num: '03', title: '足迹', desc: '一路走来的刻度' },
-    { id: 'guestbook', num: '04', title: '留墨', desc: '给工坊留一句话' }
+    { id: 'essays',    num: '01', numCn: '壹', title: '文墨', desc: '长文与系统沉淀', tag: '卷帙 · 哲思' },
+    { id: 'moments',   num: '02', numCn: '贰', title: '闪念', desc: '随手记下的念头', tag: '灵光 · 碎片' },
+    { id: 'timeline',  num: '03', numCn: '叁', title: '足迹', desc: '一路走来的刻度', tag: '岁月 · 历程' },
+    { id: 'guestbook', num: '04', numCn: '肆', title: '留墨', desc: '给工坊留一句话', tag: '知交 · 题签' }
   ];
   const SEAL_FACES = ['纸', '境', '工', '坊'];
 
@@ -4835,6 +4891,7 @@ window.addEventListener('DOMContentLoaded', () => {
         ink: parseColor(cssVar('--text-title', '#1f1c18')),
         muted: parseColor(cssVar('--text-muted', '#6b645a')),
         seal: parseColor(cssVar('--brand-seal', '#a8322b')),
+        gold: [198, 156, 70],
         dark: document.documentElement.getAttribute('data-theme') === 'dark'
       };
     }
@@ -4852,19 +4909,37 @@ window.addEventListener('DOMContentLoaded', () => {
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(stage);
     else window.addEventListener('resize', resize);
 
-    // 东方松烟与熟宣金箔碎屑 (金粟笺微光与空灵墨霭)
-    const dots = [];
-    for (let i = 0; i < 32; i++) {
-      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.6 + Math.random() * 2.8;
+    // 东方金粟飞箔与松烟墨霭空间粒子 (3D 翻滚与微澜)
+    const particles = [];
+    // 18 枚 3D 悬浮金箔 (Gold leaf tumbling flakes)
+    for (let i = 0; i < 18; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.4 + Math.random() * 3.2;
       const s = Math.sqrt(1 - u * u);
-      dots.push({
+      particles.push({
+        kind: 'gold',
         x: r * s * Math.cos(th),
-        y: u * r * 0.52,
+        y: u * r * 0.55,
         z: r * s * Math.sin(th),
-        s: 0.35 + Math.random() * 0.55,
+        w: 1.8 + Math.random() * 2.2,
+        h: 2.4 + Math.random() * 2.8,
+        rotSpeedX: 0.8 + Math.random() * 1.5,
+        rotSpeedY: 1.1 + Math.random() * 1.8,
         ph: Math.random() * 6.28,
-        twinkle: 1.1 + Math.random() * 1.6,
-        isGold: Math.random() > 0.42
+        twinkle: 1.4 + Math.random() * 1.8
+      });
+    }
+    // 16 缕松烟墨气微尘 (Pine soot ink mist puffs)
+    for (let i = 0; i < 16; i++) {
+      const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, r = 2.2 + Math.random() * 3.5;
+      const s = Math.sqrt(1 - u * u);
+      particles.push({
+        kind: 'ink',
+        x: r * s * Math.cos(th),
+        y: u * r * 0.5,
+        z: r * s * Math.sin(th),
+        r: 3.5 + Math.random() * 5.5,
+        ph: Math.random() * 6.28,
+        driftSpeed: 0.15 + Math.random() * 0.25
       });
     }
 
@@ -4883,7 +4958,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     function rotY(p, a) { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c + p[2] * s, p[1], -p[0] * s + p[2] * c]; }
     function rotX(p, a) { const c = Math.cos(a), s = Math.sin(a); return [p[0], p[1] * c - p[2] * s, p[1] * s + p[2] * c]; }
-    function viewNormal(n) { // 只需旋转，不需平移
+    function viewNormal(n) {
       const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
       let x = n[0] * cy - n[2] * sy, z = n[0] * sy + n[2] * cy;
       const y = n[1] * cp - z * sp; z = n[1] * sp + z * cp;
@@ -4907,78 +4982,99 @@ window.addEventListener('DOMContentLoaded', () => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      // 1. 同心水墨回环金石轨与印石大柔影
+      // 1. 同心水墨罗盘天象轨与印石大柔影
       const g = project([0, 2.05, 0]);
       ctx.save();
       ctx.translate(g.x, g.y);
       ctx.scale(1, 0.22);
 
-      // 宣纸同心墨轨 (微妙空间参照，消除孤悬虚空感)
+      // (1) 宣纸同心墨轨 (外虚环、内实环与十二辰位刻度)
+      const compassR1 = W * 0.35, compassR2 = W * 0.27;
       ctx.beginPath();
-      ctx.arc(0, 0, W * 0.34, 0, Math.PI * 2);
-      ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.09 : 0.04);
+      ctx.arc(0, 0, compassR1, 0, Math.PI * 2);
+      ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.09 : 0.045);
       ctx.lineWidth = 1.2 * dpr;
       ctx.setLineDash([4 * dpr, 6 * dpr]);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // 中心印石大柔影
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.26);
-      grad.addColorStop(0, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.38 : 0.12));
-      grad.addColorStop(0.5, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.12 : 0.04));
+      ctx.beginPath();
+      ctx.arc(0, 0, compassR2, 0, Math.PI * 2);
+      ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.06 : 0.03);
+      ctx.lineWidth = 0.8 * dpr;
+      ctx.stroke();
+
+      // 十二辰位刻度与四正印迹
+      for (let a = 0; a < 12; a++) {
+        const th = (a / 12) * Math.PI * 2;
+        const cos = Math.cos(th), sin = Math.sin(th);
+        const isQuad = a % 3 === 0;
+        ctx.beginPath();
+        ctx.moveTo(cos * (compassR1 - (isQuad ? 7 : 4) * dpr), sin * (compassR1 - (isQuad ? 7 : 4) * dpr));
+        ctx.lineTo(cos * (compassR1 + (isQuad ? 7 : 4) * dpr), sin * (compassR1 + (isQuad ? 7 : 4) * dpr));
+        ctx.strokeStyle = isQuad ? rgb(pal.seal, 1, pal.dark ? 0.22 : 0.15) : rgb(pal.ink, 1, pal.dark ? 0.08 : 0.04);
+        ctx.lineWidth = (isQuad ? 1.5 : 0.75) * dpr;
+        ctx.stroke();
+      }
+
+      // (2) 中心印石多重环境光漫射阴影
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, W * 0.28);
+      grad.addColorStop(0, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.42 : 0.14));
+      grad.addColorStop(0.35, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.16 : 0.06));
+      grad.addColorStop(0.7, rgb(pal.dark ? [0, 0, 0] : pal.ink, 1, pal.dark ? 0.05 : 0.015));
       grad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = grad;
       ctx.fillRect(-W, -H, W * 2, H * 2);
       ctx.restore();
 
-      // 每张悬浮纸页投射到纸面的动态柔影 (增强层次深度)
+      // 每张悬浮纸页投射到纸面的动态柔影
       SHEETS.forEach((_, i) => {
         const ang = (i / SHEETS.length) * Math.PI * 2 + t * 0.12;
-        const R = 2.95 + lift[i] * 0.38;
+        const R = 3.05 + lift[i] * 0.42;
         const cx = Math.sin(ang) * R, cz = Math.cos(ang) * R;
         const sp = project([cx, 2.05, cz]);
         ctx.save();
         ctx.translate(sp.x, sp.y);
         ctx.scale(1, 0.22);
-        const sgrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 48 * dpr);
-        sgrad.addColorStop(0, rgb(pal.ink, 1, pal.dark ? 0.22 : 0.07));
+        const sgrad = ctx.createRadialGradient(0, 0, 0, 0, 0, (46 + lift[i] * 8) * dpr);
+        sgrad.addColorStop(0, rgb(pal.ink, 1, pal.dark ? 0.24 : 0.08));
+        sgrad.addColorStop(0.5, rgb(pal.ink, 1, pal.dark ? 0.1 : 0.03));
         sgrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = sgrad;
         ctx.beginPath();
-        ctx.arc(0, 0, 48 * dpr, 0, Math.PI * 2);
+        ctx.arc(0, 0, (46 + lift[i] * 8) * dpr, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
       });
 
       const faces = [];
-      // 朱砂印立方 (尺度饱满，石质沉厚)
-      const spin = t * 0.35, bob = Math.sin(t * 1.1) * 0.08, S = 0.84;
+      // 2. 寿山朱砂印立方 (尺度饱满，石质包浆，微倒角)
+      const spin = t * 0.32, bob = Math.sin(t * 1.1) * 0.08, S = 0.86;
       const cubeV = [];
       for (let i = 0; i < 8; i++) {
         let p = [(i & 1 ? 1 : -1) * S, (i & 2 ? 1 : -1) * S, (i & 4 ? 1 : -1) * S];
         p = rotX(rotY(p, spin), 0.18); p[1] += bob - 0.15;
         cubeV.push(p);
       }
-      // 每面顶点顺序保证 u×v 指向内侧，这样从外侧看文字不镜像
       const CF = [[0, 1, 3, 2, 0], [1, 5, 7, 3, 1], [5, 4, 6, 7, 2], [4, 0, 2, 6, 3], [0, 4, 5, 1, -1], [2, 3, 7, 6, -1]];
       CF.forEach(f => {
         const a = cubeV[f[0]], b = cubeV[f[1]], d = cubeV[f[3]];
         const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
         let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-        const m = Math.hypot(...n); n = n.map(x => -x / m); // 取外法线
+        const m = Math.hypot(...n); n = n.map(x => -x / m);
         const vn = viewNormal(n);
-        if (vn[2] > 0) return; // 背面剔除
+        if (vn[2] > 0) return;
         const pts = [a, b, cubeV[f[2]], d].map(project);
         faces.push({ z: pts.reduce((s, p) => s + p.z, 0) / 4, kind: 'cube', pts, n, label: f[4] });
       });
 
-      // 五张纸页 (经折装册页尺度，典雅沉稳)
+      // 3. 四张日本竹尾经折装特种纸页
       SHEETS.forEach((s, i) => {
         const ang = (i / SHEETS.length) * Math.PI * 2 + t * 0.12;
-        const R = 2.95 + lift[i] * 0.38, hw = 0.76, hh = 1.05;
-        const cy = Math.sin(t * 0.9 + i * 1.3) * 0.16 - 0.12;
+        const R = 3.05 + lift[i] * 0.42, hw = 0.78, hh = 1.08;
+        const cy = Math.sin(t * 0.85 + i * 1.4) * 0.15 - 0.12;
         const cx = Math.sin(ang) * R, cz = Math.cos(ang) * R;
-        const tx = -Math.cos(ang), tz = Math.sin(ang); // 切向（使正面文字朝外可读）
+        const tx = -Math.cos(ang), tz = Math.sin(ang);
         const tilt = 0.1;
         const corners = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([u, v]) =>
           [cx + tx * u, cy + v + tilt * u * 0.2, cz + tz * u]);
@@ -4990,28 +5086,54 @@ window.addEventListener('DOMContentLoaded', () => {
 
       faces.sort((a, b) => b.z - a.z);
 
-      // 空间松烟墨气与金粟金箔微尘
-      const dp = dots.map(d => {
-        const p = project(rotY([d.x, d.y + Math.sin(t * 0.8 + d.ph) * 0.1, d.z], t * 0.04));
-        p.s = d.s; p.ph = d.ph; p.twinkle = d.twinkle; p.isGold = d.isGold;
-        return p;
-      });
-      const drawDots = (far) => dp.forEach(d => {
-        if ((d.z > 9.5) !== far) return;
-        const distA = Math.max(0.04, Math.min(0.48, 1.4 - d.z / 9.5));
-        const tw = 0.72 + 0.28 * Math.sin(t * d.twinkle + d.ph);
-        const alpha = distA * tw * (pal.dark ? 0.38 : 0.22);
-        ctx.beginPath();
-        if (d.isGold) {
-          ctx.fillStyle = pal.dark ? `rgba(235, 195, 110, ${alpha * 0.85})` : `rgba(185, 138, 48, ${alpha * 0.75})`;
-        } else {
-          ctx.fillStyle = rgb(pal.ink, 1, alpha * 0.55);
-        }
-        ctx.arc(d.x, d.y, d.s * dpr * (9.5 / d.z), 0, 6.283);
-        ctx.fill();
-      });
+      // 4. 空间松烟墨气与金粟飞箔 (3D 景深渲染)
+      const renderParticles = (far) => {
+        particles.forEach(p => {
+          let pos = [p.x, p.y + Math.sin(t * 0.7 + p.ph) * 0.12, p.z];
+          pos = rotY(pos, t * 0.04);
+          const pr = project(pos);
+          if ((pr.z > 9.5) !== far) return;
+          const distA = Math.max(0.06, Math.min(0.55, 1.45 - pr.z / 9.5));
+          if (p.kind === 'gold') {
+            const rotA = t * p.rotSpeedX + p.ph;
+            const rotB = t * p.rotSpeedY;
+            const spec = Math.pow(Math.max(0, Math.cos(rotA) * Math.sin(rotB)), 2);
+            const alpha = distA * (0.45 + 0.55 * spec) * (pal.dark ? 0.85 : 0.65);
+            ctx.save();
+            ctx.translate(pr.x, pr.y);
+            ctx.rotate(rotA);
+            ctx.scale(Math.cos(rotB), 1);
+            ctx.fillStyle = `rgba(${pal.gold[0]}, ${pal.gold[1]}, ${pal.gold[2]}, ${alpha})`;
+            ctx.beginPath();
+            ctx.moveTo(0, -p.h * dpr * 0.5);
+            ctx.lineTo(p.w * dpr * 0.5, 0);
+            ctx.lineTo(0, p.h * dpr * 0.5);
+            ctx.lineTo(-p.w * dpr * 0.5, 0);
+            ctx.closePath();
+            ctx.fill();
+            if (spec > 0.6) {
+              ctx.fillStyle = `rgba(255, 255, 230, ${alpha * 0.9})`;
+              ctx.beginPath();
+              ctx.arc(0, 0, 1.2 * dpr, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          } else {
+            const alpha = distA * 0.22 * (pal.dark ? 0.35 : 0.18);
+            const rad = p.r * dpr * (9.5 / pr.z);
+            const rg = ctx.createRadialGradient(pr.x, pr.y, 0, pr.x, pr.y, rad);
+            rg.addColorStop(0, rgb(pal.ink, 1, alpha));
+            rg.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = rg;
+            ctx.beginPath();
+            ctx.arc(pr.x, pr.y, rad, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+      };
+
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      drawDots(true);
+      renderParticles(true);
 
       sheetPolys = [];
       faces.forEach(f => {
@@ -5019,154 +5141,206 @@ window.addEventListener('DOMContentLoaded', () => {
         const k = shade(f.n);
         if (f.kind === 'cube') {
           poly(f.pts);
-          // 寿山石朱砂基色，富有深沉的金石温润感
-          ctx.fillStyle = rgb(pal.seal, k * (f.label < 0 ? 0.8 : 0.96));
+          // 寿山石朱砂渐变包浆 (Top-left high light to bottom-right deep shade)
+          const gradStone = ctx.createLinearGradient(f.pts[0].x, f.pts[0].y, f.pts[2].x, f.pts[2].y);
+          gradStone.addColorStop(0, rgb(pal.seal, k * 1.08, 0.98));
+          gradStone.addColorStop(0.5, rgb(pal.seal, k * 0.96, 0.98));
+          gradStone.addColorStop(1, rgb(pal.seal, k * 0.82, 0.98));
+          ctx.fillStyle = gradStone;
           ctx.fill();
-          // 极细石质棱角微光
-          ctx.strokeStyle = rgb(pal.seal, k * 1.12, 0.45);
-          ctx.lineWidth = 0.75 * dpr;
+
+          // 金石温润倒角棱线微光
+          ctx.strokeStyle = rgb(pal.seal, Math.min(1.3, k * 1.25), 0.55);
+          ctx.lineWidth = 0.85 * dpr;
           ctx.stroke();
 
           if (f.label >= 0) {
             mapTo(f.pts[0], f.pts[1], f.pts[3], 100, 100);
             
-            // 汉印双重规制边框（外粗内细）
-            ctx.strokeStyle = 'rgba(255, 248, 238, 0.78)';
-            ctx.lineWidth = 2.4;
+            // 汉印规制：外粗内细双重回廊边栏
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.82)';
+            ctx.lineWidth = 2.6;
             ctx.strokeRect(9, 9, 82, 82);
-            ctx.strokeStyle = 'rgba(255, 248, 238, 0.42)';
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.45)';
             ctx.lineWidth = 0.8;
             ctx.strokeRect(13.5, 13.5, 73, 73);
 
-            // 四角古拙断金切角
-            ctx.fillStyle = 'rgba(255, 248, 238, 0.65)';
-            ctx.fillRect(8, 8, 3, 3);
-            ctx.fillRect(89, 8, 3, 3);
-            ctx.fillRect(8, 89, 3, 3);
-            ctx.fillRect(89, 89, 3, 3);
+            // 四角断金残边古意
+            ctx.fillStyle = 'rgba(255, 248, 238, 0.72)';
+            ctx.fillRect(8, 8, 3.5, 3.5);
+            ctx.fillRect(88.5, 8, 3.5, 3.5);
+            ctx.fillRect(8, 88.5, 3.5, 3.5);
+            ctx.fillRect(88.5, 88.5, 3.5, 3.5);
 
-            // 印文字体雕刻凹陷阴影（微浮雕感）
-            ctx.fillStyle = 'rgba(50, 10, 10, 0.45)';
-            ctx.font = '600 52px "Songti SC","Noto Serif CJK SC","Source Han Serif SC",serif';
+            // 印文字体雕刻凹陷阴影（金石凹凸浮雕感）
+            ctx.font = '600 52px "Ma Shan Zheng", "Songti SC", "Noto Serif CJK SC", serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(SEAL_FACES[f.label], 51, 53.5);
+            ctx.fillStyle = 'rgba(40, 8, 8, 0.55)';
+            ctx.fillText(SEAL_FACES[f.label], 51.5, 53.5);
 
-            // 印面阳文纯正象牙金石白
-            ctx.fillStyle = 'rgba(255, 249, 242, 0.96)';
+            // 印面阳文纯正金石象牙白
+            ctx.fillStyle = 'rgba(255, 249, 242, 0.98)';
             ctx.fillText(SEAL_FACES[f.label], 50, 52);
+          } else if (f.n[1] < -0.5) {
+            // 顶部印纽平台：古朴几何篆刻印台
+            mapTo(f.pts[0], f.pts[1], f.pts[3], 100, 100);
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.35)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(18, 18, 64, 64);
+            ctx.beginPath();
+            ctx.arc(50, 50, 18, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 248, 238, 0.45)';
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(255, 248, 238, 0.6)';
+            ctx.beginPath();
+            ctx.arc(50, 50, 5, 0, Math.PI * 2);
+            ctx.fill();
           }
         } else {
           const hl = f.i === hover;
           poly(f.pts);
-          // 悬浮纸张立体柔和漫反射阴影
-          ctx.shadowColor = 'rgba(0,0,0,' + (pal.dark ? (hl ? 0.42 : 0.24) : (hl ? 0.12 : 0.06)) + ')';
-          ctx.shadowBlur = (hl ? 20 : 11) * dpr;
-          ctx.shadowOffsetY = (hl ? 6 : 3.5) * dpr;
+          ctx.shadowColor = 'rgba(0,0,0,' + (pal.dark ? (hl ? 0.45 : 0.25) : (hl ? 0.14 : 0.07)) + ')';
+          ctx.shadowBlur = (hl ? 22 : 12) * dpr;
+          ctx.shadowOffsetY = (hl ? 7 : 4) * dpr;
           ctx.fillStyle = rgb(pal.paper, f.front ? k : k * 0.94);
           ctx.fill();
           ctx.shadowColor = 'transparent';
 
           // 纸张边缘：极精工的 0.65px 细微光切线
-          ctx.strokeStyle = hl ? rgb(pal.seal, 1, 0.8) : rgb(pal.ink, 1, pal.dark ? 0.16 : 0.08);
-          ctx.lineWidth = (hl ? 1.2 : 0.65) * dpr;
+          ctx.strokeStyle = hl ? rgb(pal.seal, 1, 0.85) : rgb(pal.ink, 1, pal.dark ? 0.16 : 0.08);
+          ctx.lineWidth = (hl ? 1.4 : 0.7) * dpr;
           ctx.stroke();
 
           const s = SHEETS[f.i];
           if (f.front) {
-            mapTo(f.pts[0], f.pts[1], f.pts[3], 124, 164);
+            mapTo(f.pts[0], f.pts[1], f.pts[3], 128, 172);
 
-            // 1. 竹尾特种棉纸自然漫射光（极轻微垂直微沉，剔除刺眼滑动反光）
-            const diffuse = ctx.createLinearGradient(0, 0, 0, 164);
-            diffuse.addColorStop(0, pal.dark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.4)');
-            diffuse.addColorStop(1, pal.dark ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.02)');
+            // 1. 竹尾特种棉纸自然漫射与纸张微明暗
+            const diffuse = ctx.createLinearGradient(0, 0, 0, 172);
+            diffuse.addColorStop(0, pal.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.45)');
+            diffuse.addColorStop(1, pal.dark ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.03)');
             ctx.fillStyle = diffuse;
-            ctx.fillRect(0, 0, 124, 164);
+            ctx.fillRect(0, 0, 128, 172);
 
-            // 2. 精品典籍装帧：内外双重极细装裱墨线
-            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.12 : 0.06);
-            ctx.lineWidth = 0.6;
-            ctx.strokeRect(6, 6, 112, 152);
+            // 2. 典籍装帧：内外双重极细装裱墨线
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.12 : 0.065);
+            ctx.lineWidth = 0.65;
+            ctx.strokeRect(6, 6, 116, 160);
 
-            // 顶部章节标牌 (NO. 01 / 02 / 03 / 04)
-            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = rgb(pal.seal, 1, 0.88);
+            // 3. 顶部章节标牌：朱砂红汉数印块 + 序号
+            ctx.fillStyle = rgb(pal.seal, 1, 0.9);
+            ctx.fillRect(12, 14, 18, 16);
+            ctx.fillStyle = '#fff9f2';
+            ctx.font = '600 10.5px "Ma Shan Zheng", serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(s.numCn, 21, 22);
+
+            ctx.textAlign = 'left';
+            ctx.fillStyle = rgb(pal.ink, 1, pal.dark ? 0.45 : 0.35);
             ctx.font = '600 11px ui-monospace,Menlo,Consolas,monospace';
-            ctx.fillText(s.num, 14, 22);
+            ctx.fillText(s.num, 34, 22);
 
-            // 顶部右侧天圆地方微印徽记
-            ctx.fillStyle = rgb(pal.ink, 1, pal.dark ? 0.2 : 0.14);
-            ctx.beginPath();
-            ctx.arc(106, 22, 2.2, 0, 6.283);
-            ctx.fill();
-            ctx.strokeStyle = rgb(pal.seal, 1, 0.35);
-            ctx.lineWidth = 0.8;
-            ctx.strokeRect(96, 19.5, 5, 5);
+            // 顶部右侧雅致标签 (s.tag)
+            ctx.textAlign = 'right';
+            ctx.fillStyle = rgb(pal.muted, 1, 0.75);
+            ctx.font = '500 8.5px -apple-system,"PingFang SC",sans-serif';
+            ctx.fillText(s.tag, 116, 22);
 
-            // 顶部横隔线（极细精致）
+            // 顶部横隔细线
             ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.1 : 0.07);
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.moveTo(14, 32);
-            ctx.lineTo(110, 32);
+            ctx.moveTo(12, 36);
+            ctx.lineTo(116, 36);
             ctx.stroke();
 
-            // 3. 核心大标题：毛笔书法行草美学
-            ctx.fillStyle = rgb(pal.ink, 1, 0.96);
-            ctx.font = '600 28px "Ma Shan Zheng", "Songti SC", "Noto Serif CJK SC", serif';
-            ctx.fillText(s.title, 14, 66);
+            // 4. 核心大标题：真·毛笔行楷气韵 (Ma Shan Zheng)
+            ctx.textAlign = 'left';
+            ctx.fillStyle = rgb(pal.ink, 1, 0.98);
+            ctx.font = '600 30px "Ma Shan Zheng", "Songti SC", serif';
+            ctx.fillText(s.title, 12, 72);
 
-            // 4. 副标题说明文字：疏朗优雅
-            ctx.fillStyle = rgb(pal.muted, 1, 0.88);
+            // 5. 副标题说明文字
+            ctx.fillStyle = rgb(pal.muted, 1, 0.9);
             ctx.font = '10.5px -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
-            ctx.fillText(s.desc, 14, 88);
+            ctx.fillText(s.desc, 12, 96);
 
-            // 5. 底部版心防伪细纹（现代书籍装帧感，计白当黑）
+            // 6. 纸页右上角立体折角 (Dog-ear curl & shadow)
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(114, 0);
+            ctx.lineTo(128, 14);
+            ctx.lineTo(114, 14);
+            ctx.closePath();
+            ctx.fillStyle = pal.dark ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.08)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(114, 0);
+            ctx.lineTo(128, 14);
+            ctx.lineTo(114, 14);
+            ctx.closePath();
+            ctx.fillStyle = rgb(pal.paper, 1.08);
+            ctx.fill();
+            ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.15 : 0.08);
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            ctx.restore();
+
+            // 7. 纸面内嵌洒金微粒 (洒金特种宣纸)
+            const cardGold = [
+              { x: 28, y: 122, r: 1.1 }, { x: 74, y: 52, r: 0.9 },
+              { x: 104, y: 85, r: 1.3 }, { x: 50, y: 142, r: 0.8 }, { x: 92, y: 128, r: 1.0 }
+            ];
+            cardGold.forEach(cg => {
+              ctx.beginPath();
+              ctx.arc(cg.x, cg.y, cg.r, 0, Math.PI * 2);
+              ctx.fillStyle = pal.dark ? 'rgba(235, 195, 110, 0.4)' : 'rgba(185, 138, 48, 0.3)';
+              ctx.fill();
+            });
+
+            // 8. 底部防伪细线与装帧印章
             ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.08 : 0.05);
             ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.moveTo(14, 116);
-            ctx.lineTo(84, 116);
+            ctx.moveTo(12, 126);
+            ctx.lineTo(84, 126);
             ctx.stroke();
 
-            // 典籍装帧微印
             ctx.fillStyle = rgb(pal.muted, 1, 0.45);
             ctx.font = '500 7px ui-monospace,Menlo,Consolas,monospace';
-            ctx.fillText('FOLIO / ATELIER', 14, 126);
+            ctx.fillText('TAKEO / ATELIER 2026', 12, 136);
 
-            // 6. 右下角：高定朱白文小雅印（矢量几何回纹，告别糊成一团的模糊汉字）
+            // 右下角高定朱砂方印 (纸境留墨)
             ctx.save();
-            ctx.translate(94, 134);
-            // 印章朱砂底框 (16x16)
-            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.96 : 0.82);
-            ctx.fillRect(0, 0, 16, 16);
-            // 极细微内框
+            ctx.translate(96, 140);
+            ctx.fillStyle = rgb(pal.seal, 1, hl ? 0.96 : 0.84);
+            ctx.fillRect(0, 0, 18, 18);
             ctx.strokeStyle = 'rgba(255, 248, 238, 0.85)';
             ctx.lineWidth = 0.7;
-            ctx.strokeRect(1.8, 1.8, 12.4, 12.4);
-            // 内部小篆印纹（规整的朱白文回形金石印痕）
+            ctx.strokeRect(2, 2, 14, 14);
             ctx.fillStyle = 'rgba(255, 248, 238, 0.92)';
-            ctx.fillRect(4.2, 4.2, 3.2, 3.2);
-            ctx.fillRect(8.6, 4.2, 3.2, 3.2);
-            ctx.fillRect(4.2, 8.6, 3.2, 3.2);
-            ctx.fillRect(8.6, 8.6, 3.2, 3.2);
+            ctx.fillRect(4.5, 4.5, 3.5, 3.5);
+            ctx.fillRect(10, 4.5, 3.5, 3.5);
+            ctx.fillRect(4.5, 10, 3.5, 3.5);
+            ctx.fillRect(10, 10, 3.5, 3.5);
             ctx.restore();
 
             sheetPolys.push({ i: f.i, pts: f.pts });
           } else {
-            // 翻转背面：精致的竹尾水印留白
-            mapTo(f.pts[0], f.pts[1], f.pts[3], 124, 164);
+            // 翻转背面：精致竹尾水印与装订线
+            mapTo(f.pts[0], f.pts[1], f.pts[3], 128, 172);
             ctx.strokeStyle = rgb(pal.ink, 1, pal.dark ? 0.06 : 0.035);
             ctx.lineWidth = 0.5;
-            ctx.strokeRect(10, 10, 104, 144);
+            ctx.strokeRect(10, 10, 108, 152);
             ctx.fillStyle = rgb(pal.seal, 1, pal.dark ? 0.12 : 0.06);
             ctx.beginPath();
-            ctx.arc(62, 82, 6, 0, 6.283);
+            ctx.arc(64, 86, 7, 0, Math.PI * 2);
             ctx.fill();
           }
         }
       });
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      drawDots(false);
+      renderParticles(false);
 
       SHEETS.forEach((_, i) => { lift[i] += ((i === hover ? 1 : 0) - lift[i]) * 0.15; });
       if (visible && !reduceMotion) raf = requestAnimationFrame(frame);
@@ -5210,7 +5384,7 @@ window.addEventListener('DOMContentLoaded', () => {
         hover = h;
         canvas.style.cursor = h >= 0 ? 'var(--cursor-pointer)' : 'var(--cursor-brush)';
         if (tip) {
-          tip.textContent = h >= 0 ? `前往 ${SHEETS[h].num} · ${SHEETS[h].title}` : '';
+          tip.textContent = h >= 0 ? `前往 ${SHEETS[h].num} · ${SHEETS[h].title} (${SHEETS[h].desc})` : '';
           tip.classList.toggle('is-on', h >= 0);
         }
         kick();
@@ -5245,7 +5419,6 @@ window.addEventListener('DOMContentLoaded', () => {
       new IntersectionObserver((en) => { visible = en[0].isIntersecting; if (visible) kick(); }).observe(stage);
     }
     document.addEventListener('visibilitychange', () => { visible = !document.hidden; if (visible) kick(); });
-    // 主题切换后重绘一帧（动效关闭时尤需）
     new MutationObserver(() => setTimeout(kick, 30)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(kick);
     kick();
@@ -5545,7 +5718,6 @@ window.addEventListener('DOMContentLoaded', () => {
     var refreshBtn = document.getElementById('hero-typewriter-refresh');
     var brushToggleBtn = document.getElementById('hero-brush-mode-toggle');
 
-    // 结构自愈：自动适配并恢复文墨打字机 Banner (包含紫毫毛笔与提笔试墨按钮)
     if (!textEl || !brushEl) {
       bannerEl.innerHTML = 
         '<div class="typewriter-seal-tag" aria-hidden="true"><span class="seal-glyph">墨</span><span class="seal-text">引</span></div>' +
@@ -5577,7 +5749,7 @@ window.addEventListener('DOMContentLoaded', () => {
             '</svg>' +
             '<span class="mode-text">提笔</span>' +
           '</button>' +
-          '<button type="button" class="typewriter-refresh-btn" id="hero-typewriter-refresh" title="点击换一笺" aria-label="换一笺">' +
+          '<button type="button" class="typewriter-refresh-btn" id="hero-typewriter-refresh" title="点击换一笺 · 毛笔墨引" aria-label="换一笺">' +
             '<svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
               '<path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>' +
             '</svg>' +
@@ -5598,31 +5770,47 @@ window.addEventListener('DOMContentLoaded', () => {
     var pIdx = 0;
     var charIdx = 0;
     var state = 'typing'; // 'typing' | 'waiting' | 'deleting'
-    var isPaused = false;
+    var isHoverWaiting = false;
     var timer = null;
 
-    bannerEl.addEventListener('mouseenter', function () { isPaused = true; });
-    bannerEl.addEventListener('mouseleave', function () { isPaused = false; });
+    // 鼠标悬停只在完整句子停驻阅读时保持常显，绝不阻塞打字与点击
+    bannerEl.addEventListener('mouseenter', function () { isHoverWaiting = true; });
+    bannerEl.addEventListener('mouseleave', function () { isHoverWaiting = false; });
 
-    // 交互式“换一笺” (瞬时响应，绝不卡死)
+    // 交互式“换一笺” (瞬时响应，纸面水墨微融过渡)
     function nextPhrase() {
       if (timer) clearTimeout(timer);
-      state = 'deleting';
-      if (brushEl) brushEl.className = 'typewriter-brush is-deleting';
+      pIdx = (pIdx + 1) % heroPhrases.length;
+      charIdx = 0;
+      state = 'typing';
       
-      // 刷新图标旋转动效反馈
+      // 触感反馈：刷新图标旋转 + 毛笔提笔试墨
       if (refreshBtn) {
         var icon = refreshBtn.querySelector('.refresh-icon');
         if (icon) {
-          icon.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+          icon.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
           icon.style.transform = 'rotate(360deg)';
           setTimeout(function() {
             icon.style.transition = 'none';
             icon.style.transform = 'rotate(0deg)';
-          }, 450);
+          }, 460);
         }
       }
-      tick();
+      if (brushEl) {
+        brushEl.className = 'typewriter-brush is-writing';
+      }
+      
+      // 纸面水墨微融淡出过渡，绝不卡死
+      textEl.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      textEl.style.opacity = '0.1';
+      textEl.style.transform = 'translateY(-2px)';
+      setTimeout(function() {
+        textEl.innerHTML = '';
+        textEl.style.transition = 'none';
+        textEl.style.opacity = '1';
+        textEl.style.transform = 'none';
+        tick();
+      }, 160);
     }
 
     if (refreshBtn) {
@@ -5636,13 +5824,16 @@ window.addEventListener('DOMContentLoaded', () => {
       nextPhrase();
     });
 
-    // 毛笔手书逐字入纸渲染器
+    // 真·毛笔逐字入纸渲染器 (具有墨晕、毛笔按压与微颤韵律)
     function renderInkChars(phrase, count, isFresh) {
       var frag = document.createDocumentFragment();
       for (var i = 0; i < count; i++) {
         var span = document.createElement('span');
         span.className = 'ink-char' + (isFresh && i === count - 1 ? ' ink-fresh' : '');
         span.textContent = phrase[i];
+        // 东方水墨微颤律动与浓淡自然层次
+        var jitter = ((i * 17) % 7) * 0.1 - 0.3;
+        span.style.transform = 'translateY(' + jitter.toFixed(1) + 'px)';
         frag.appendChild(span);
       }
       textEl.innerHTML = '';
@@ -5667,11 +5858,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!textEl) return;
       }
 
-      if (isPaused) {
-        timer = setTimeout(tick, 200);
-        return;
-      }
-
       var currentPhrase = heroPhrases[pIdx] || heroPhrases[0];
 
       if (state === 'deleting') {
@@ -5684,18 +5870,15 @@ window.addEventListener('DOMContentLoaded', () => {
           timer = setTimeout(tick, 300);
           return;
         }
-        timer = setTimeout(tick, 16);
-      } else {
+        timer = setTimeout(tick, 18);
+      } else if (state === 'typing') {
         charIdx++;
         renderInkChars(currentPhrase, charIdx, true);
         if (charIdx >= currentPhrase.length) {
           state = 'waiting';
           // 整句完成时，毛笔悬腕品题呼吸
           if (brushEl) brushEl.className = 'typewriter-brush is-hovering';
-          timer = setTimeout(function() {
-            state = 'deleting';
-            tick();
-          }, 4500); // 完整句停驻 4.5 秒供从容品读
+          timer = setTimeout(checkWaitingAdvance, 4500);
           return;
         }
         var lastChar = currentPhrase[charIdx - 1];
@@ -5707,6 +5890,16 @@ window.addEventListener('DOMContentLoaded', () => {
                     Math.max(38, 62 + naturalJitter);
         timer = setTimeout(tick, delay);
       }
+    }
+
+    function checkWaitingAdvance() {
+      if (isHoverWaiting) {
+        // 用户悬停细读中，继续延时等待
+        timer = setTimeout(checkWaitingAdvance, 1000);
+        return;
+      }
+      state = 'deleting';
+      tick();
     }
 
     // ★ 开屏立显
@@ -5742,12 +5935,13 @@ window.addEventListener('DOMContentLoaded', () => {
             '<div class="calligraphy-title-row">' +
               '<span class="calligraphy-seal-badge">墨池</span>' +
               '<h3 class="calligraphy-heading">纸境墨池 · 提笔挥毫</h3>' +
-              '<span class="calligraphy-subtip" id="c-brush-status">中锋 · 松烟墨</span>' +
+              '<span class="calligraphy-subtip" id="c-brush-status">中锋 · 兼毫行楷</span>' +
             '</div>' +
             '<div class="calligraphy-tools">' +
               '<button type="button" class="c-tool-btn is-active" id="c-tool-ink" title="松烟浓墨"><span class="c-color-dot dot-ink"></span>松烟墨</button>' +
               '<button type="button" class="c-tool-btn" id="c-tool-seal" title="朱砂点赤"><span class="c-color-dot dot-seal"></span>朱砂印</button>' +
-              '<button type="button" class="c-tool-btn" id="c-tool-switch-brush" title="点击换一笔：小楷/中锋/大字">换一笔(<span id="c-brush-name">中锋</span>)</button>' +
+              '<button type="button" class="c-tool-btn" id="c-tool-switch-brush" title="点击轮换笔毫：小楷/中锋/大字">换一笔(<span id="c-brush-name">中锋</span>)</button>' +
+              '<button type="button" class="c-tool-btn" id="c-tool-undo" title="撤回上一笔">撤回</button>' +
               '<button type="button" class="c-tool-btn" id="c-tool-clear" title="清宣归位">清笺</button>' +
               '<button type="button" class="c-tool-close-btn" id="c-tool-close" title="收卷归座" aria-label="关闭">&times;</button>' +
             '</div>' +
@@ -5767,17 +5961,32 @@ window.addEventListener('DOMContentLoaded', () => {
     var canvas = document.getElementById('calligraphy-canvas');
     var wrap = document.getElementById('c-wrap');
     var ctx = canvas.getContext('2d');
-    var currentColor = '#1f1c18';
+    var currentColor = '#1a1614';
     var brushModeIdx = 1; // 0=小楷, 1=中锋, 2=大字
     var brushModes = [
-      { name: '小楷', minW: 1.2, maxW: 4.5, base: 3 },
-      { name: '中锋', minW: 2.2, maxW: 9.5, base: 6 },
-      { name: '大字', minW: 4.5, maxW: 18.0, base: 12 }
+      { name: '小楷', desc: '簪花细毫 (精工小品)', minW: 1.2, maxW: 4.8, base: 2.8 },
+      { name: '中锋', desc: '兼毫行楷 (润墨畅神)', minW: 2.4, maxW: 10.0, base: 6.2 },
+      { name: '大字', desc: '榜书泼墨 (雄浑沉雄)', minW: 5.0, maxW: 20.0, base: 12.5 }
     ];
     var isDrawing = false;
     var lastPoint = null;
-    var lastWidth = 6;
+    var lastWidth = 6.2;
     var dpr = window.devicePixelRatio || 1;
+    var undoStack = [];
+
+    function saveSnapshot() {
+      try {
+        if (undoStack.length >= 15) undoStack.shift();
+        undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+      } catch(e) {}
+    }
+    function undoStroke() {
+      if (undoStack.length > 0) {
+        var prev = undoStack.pop();
+        ctx.putImageData(prev, 0, 0);
+        if (typeof showToast === 'function') showToast('已撤回上一笔 ✦');
+      }
+    }
 
     function resizeCanvas() {
       if (!wrap || !canvas) return;
@@ -5814,84 +6023,104 @@ window.addEventListener('DOMContentLoaded', () => {
     var brushNameText = document.getElementById('c-brush-name');
 
     function updateStatus() {
-      var colorName = currentColor === '#1f1c18' ? '松烟墨' : '朱砂印';
-      var modeName = brushModes[brushModeIdx].name;
-      if (statusText) statusText.textContent = modeName + ' · ' + colorName;
-      if (brushNameText) brushNameText.textContent = modeName;
+      var colorName = currentColor === '#1a1614' ? '松烟墨' : '朱砂印';
+      var m = brushModes[brushModeIdx];
+      if (statusText) statusText.textContent = m.name + ' · ' + m.desc;
+      if (brushNameText) brushNameText.textContent = m.name;
     }
 
     inkBtn.addEventListener('click', function() {
-      currentColor = '#1f1c18';
+      currentColor = '#1a1614';
       inkBtn.classList.add('is-active');
       sealBtn.classList.remove('is-active');
       updateStatus();
     });
 
     sealBtn.addEventListener('click', function() {
-      currentColor = '#9e2a2b';
+      currentColor = '#a82c2b';
       sealBtn.classList.add('is-active');
       inkBtn.classList.remove('is-active');
       updateStatus();
     });
 
-    // 换一笔（小楷 -> 中锋 -> 大字 轮换）
+    // 换一笔（小楷 -> 中锋 -> 大字 轮换 + 触感提示）
+    var undoBtn = document.getElementById('c-tool-undo');
+    if (undoBtn) undoBtn.addEventListener('click', undoStroke);
+
     switchBrushBtn.addEventListener('click', function() {
       brushModeIdx = (brushModeIdx + 1) % brushModes.length;
       lastWidth = brushModes[brushModeIdx].base;
       updateStatus();
       switchBrushBtn.style.transform = 'scale(0.92)';
       setTimeout(function() { switchBrushBtn.style.transform = ''; }, 150);
+      if (typeof showToast === 'function') {
+        showToast('已换笔：' + brushModes[brushModeIdx].name + ' · ' + brushModes[brushModeIdx].desc);
+      }
     });
 
     clearBtn.addEventListener('click', function() {
+      saveSnapshot();
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+      if (typeof showToast === 'function') showToast('已清宣归位 ✦');
     });
 
-    // 保存图片：离线高精度白宣纸装裱，黑白分明，红印分明，彻底杜绝黑底看不清
+    // 保存图片：2400x1400 离线超高清白宣纸装裱，彻底杜绝黑底看不清
     saveBtn.addEventListener('click', function() {
       try {
         var out = document.createElement('canvas');
-        var outW = canvas.width;
-        var outH = canvas.height;
+        var outW = Math.max(2000, canvas.width * 2);
+        var outH = Math.max(1200, canvas.height * 2);
         out.width = outW;
         out.height = outH;
         var oCtx = out.getContext('2d');
 
-        // 1. 铺上温润古雅的日本竹尾宣纸底色 (#fcfbf9)
-        oCtx.fillStyle = '#fcfbf9';
+        // 1. 铺上温润古雅的日本竹尾宣纸底色 (#fdfbf7)
+        oCtx.fillStyle = '#fdfbf7';
         oCtx.fillRect(0, 0, outW, outH);
 
-        // 2. 宣纸外框古典装裱细线 (精细双线)
-        oCtx.strokeStyle = 'rgba(31, 28, 24, 0.14)';
-        oCtx.lineWidth = 1 * dpr;
-        oCtx.strokeRect(12 * dpr, 12 * dpr, outW - 24 * dpr, outH - 24 * dpr);
-        oCtx.strokeStyle = 'rgba(31, 28, 24, 0.06)';
-        oCtx.strokeRect(16 * dpr, 16 * dpr, outW - 32 * dpr, outH - 32 * dpr);
+        // 2. 宣纸外框古典仿宋绫绢装裱双色边缘
+        var pad = 40;
+        oCtx.strokeStyle = 'rgba(168, 140, 100, 0.28)';
+        oCtx.lineWidth = 4;
+        oCtx.strokeRect(pad, pad, outW - pad * 2, outH - pad * 2);
 
-        // 3. 将用户的毛笔墨宝绘制到宣纸上
-        oCtx.drawImage(canvas, 0, 0);
+        oCtx.strokeStyle = 'rgba(31, 28, 24, 0.16)';
+        oCtx.lineWidth = 1.5;
+        oCtx.strokeRect(pad + 12, pad + 12, outW - (pad + 12) * 2, outH - (pad + 12) * 2);
 
-        // 4. 右下角钤盖「纸境工坊 · 墨宝」朱砂印章
-        var sealSize = 42 * dpr;
-        var sealX = outW - 24 * dpr - sealSize;
-        var sealY = outH - 24 * dpr - sealSize;
-        oCtx.fillStyle = '#9e2a2b';
+        // 3. 顶部题款
+        oCtx.fillStyle = 'rgba(31, 28, 24, 0.45)';
+        oCtx.font = '500 24px "Ma Shan Zheng", "Songti SC", serif';
+        oCtx.textAlign = 'left';
+        oCtx.fillText('纸境工坊 · 墨池遣兴', pad + 32, pad + 48);
+
+        // 4. 将用户的毛笔墨宝居中绘制到宣纸上
+        var drawW = outW - (pad + 30) * 2;
+        var drawH = outH - (pad + 60) * 2;
+        oCtx.drawImage(canvas, pad + 30, pad + 60, drawW, drawH);
+
+        // 5. 右下角钤盖「纸境工坊 · 岁在丙午」朱砂印章
+        var sealSize = 90;
+        var sealX = outW - pad - 40 - sealSize;
+        var sealY = outH - pad - 40 - sealSize;
+        oCtx.fillStyle = '#a82c2b';
         oCtx.fillRect(sealX, sealY, sealSize, sealSize);
         oCtx.strokeStyle = '#fff8f0';
-        oCtx.lineWidth = 1.2 * dpr;
-        oCtx.strokeRect(sealX + 3 * dpr, sealY + 3 * dpr, sealSize - 6 * dpr, sealSize - 6 * dpr);
+        oCtx.lineWidth = 3;
+        oCtx.strokeRect(sealX + 6, sealY + 6, sealSize - 12, sealSize - 12);
         oCtx.fillStyle = '#fff8f0';
-        oCtx.font = '600 ' + (12 * dpr) + 'px "Songti SC","Noto Serif CJK SC",serif';
+        oCtx.font = '600 26px "Songti SC","Noto Serif CJK SC",serif';
         oCtx.textAlign = 'center';
         oCtx.textBaseline = 'middle';
         oCtx.fillText('纸境', sealX + sealSize / 2, sealY + sealSize * 0.36);
         oCtx.fillText('留墨', sealX + sealSize / 2, sealY + sealSize * 0.72);
 
-        // 5. 导出高清 PNG
+        // 6. 导出超清 PNG
         var a = document.createElement('a');
         a.download = '纸境墨宝_' + Date.now() + '.png';
         a.href = out.toDataURL('image/png');
         a.click();
+        if (typeof showToast === 'function') showToast('宣纸墨宝画卷已装裱保存 ✦');
       } catch(e) {
         console.warn('save failed', e);
       }
@@ -5901,42 +6130,59 @@ window.addEventListener('DOMContentLoaded', () => {
     function getPos(e) {
       var r = canvas.getBoundingClientRect();
       var clientX = e.clientX, clientY = e.clientY;
-      if (e.touches && e.touches[0]) {
+      var pressure = 0.5;
+      if (typeof e.pressure === 'number' && e.pressure > 0) {
+        pressure = e.pressure;
+      } else if (e.touches && e.touches[0]) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
+        if (typeof e.touches[0].force === 'number' && e.touches[0].force > 0) {
+          pressure = e.touches[0].force;
+        }
       }
       return {
         x: clientX - r.left,
         y: clientY - r.top,
-        time: Date.now()
+        time: performance.now(),
+        pressure: pressure
       };
     }
 
     function startStroke(e) {
-      e.preventDefault();
+      if (e.touches && e.touches.length > 1) return;
+      if (e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+      saveSnapshot();
       isDrawing = true;
       lastPoint = getPos(e);
-      var m = brushModes[brushModeIdx];
-      lastWidth = m.base;
-      // 湿墨落笔墨痕微晕
+      lastWidth = brushModes[brushModeIdx].base;
+
+      // 顿笔起势：落笔微墨晕
+      ctx.save();
       ctx.fillStyle = currentColor;
       ctx.beginPath();
-      ctx.arc(lastPoint.x, lastPoint.y, m.base * 0.45, 0, Math.PI * 2);
+      ctx.arc(lastPoint.x, lastPoint.y, lastWidth * 0.45, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
     }
 
     function moveStroke(e) {
-      if (!isDrawing || !lastPoint) return;
-      e.preventDefault();
+      if (!isDrawing) return;
+      if (e.cancelable && e.type.startsWith('touch')) e.preventDefault();
+
       var current = getPos(e);
       var dist = Math.hypot(current.x - lastPoint.x, current.y - lastPoint.y);
       var dt = Math.max(1, current.time - lastPoint.time);
       var speed = dist / dt;
 
-      var m = brushModes[brushModeIdx];
-      // 速度越快笔画越细(出锋)，慢则沉厚入纸
-      var targetWidth = Math.max(m.minW, Math.min(m.maxW, m.maxW - speed * (m.maxW * 0.4)));
-      var width = lastWidth * 0.65 + targetWidth * 0.35;
+      var mode = brushModes[brushModeIdx];
+      // 速度物理动力学：行笔越疾则笔锋越聚细 (飞白)，行笔迟滞则入木沉深 (墨润)
+      var targetWidth = mode.maxW / (1 + speed * 0.42);
+      targetWidth = Math.max(mode.minW, Math.min(mode.maxW, targetWidth));
+      // 触控压感融合
+      if (current.pressure !== 0.5) {
+        targetWidth = targetWidth * (0.4 + current.pressure * 1.2);
+      }
+      var width = lastWidth * 0.55 + targetWidth * 0.45;
 
       ctx.save();
       ctx.strokeStyle = currentColor;

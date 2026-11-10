@@ -3,7 +3,8 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/mashanzheng-sub.woff') format('woff');
+  src: url('/mashanzheng-sub.woff2?v=20261111_v62') format('woff2'),
+       url('/mashanzheng-sub.woff?v=20261111_v62') format('woff');
 }
 
 /* ==========================================================================
@@ -9737,11 +9738,15 @@ html { scroll-behavior:smooth; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0.24rem 0.6rem;
+  padding: 0.28rem 0.65rem;
   font-size: 0.78rem;
   font-family: var(--font-serif);
   border: 1px solid var(--border-line);
   border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+}
   background: var(--bg-card);
   color: var(--text-body);
   cursor: pointer;
@@ -9896,4 +9901,372 @@ html { scroll-behavior:smooth; }
 }
 .c-tool-btn:active {
   transform: scale(0.95);
+}
+
+
+/* ==========================================================================
+   v62 · 全要素文墨排版引擎升级 (Oriental Technical & Editorial Markdown)
+   画卷图框 · 日本竹尾宣纸表格 · 东方印章任务清单 · 全屏展卷灯箱 · 压感画板
+   ========================================================================== */
+
+/* 1. 图框画卷 (Markdown Images & Figures) */
+.reader-figure {
+  margin: 2rem 0;
+  text-indent: 0 !important;
+  text-align: center;
+}
+.reader-figure * {
+  text-indent: 0 !important;
+}
+.reader-img-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-line);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), var(--paper-edge, none);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.reader-img-wrap:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--border-line) 75%, var(--brand-seal) 25%);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+.reader-zoomable-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  cursor: zoom-in;
+  transition: opacity 0.2s ease;
+}
+.img-zoom-hint {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(31, 28, 24, 0.75);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.reader-img-wrap:hover .img-zoom-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reader-figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.reader-figcaption .fig-seal {
+  display: inline-block;
+  font-size: 0.68rem;
+  padding: 1px 4px;
+  color: var(--brand-seal);
+  border: 1px solid var(--brand-seal);
+  border-radius: 3px;
+  line-height: 1.2;
+}
+
+/* 2. 竹尾宣纸风格表格 (Markdown Responsive Tables) */
+.reader-table-wrap {
+  margin: 1.8rem 0;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--border-line);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+  text-indent: 0 !important;
+}
+.reader-table-wrap * {
+  text-indent: 0 !important;
+}
+.reader-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  text-align: left;
+}
+.reader-table th {
+  padding: 12px 18px;
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--brand-seal) 6%);
+  color: var(--text-title);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-line);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.reader-table td {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-body);
+}
+.reader-table tr:last-child td {
+  border-bottom: none;
+}
+.reader-table tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--bg-card) 98%, var(--bg-subtle) 2%);
+}
+.reader-table tr:hover td {
+  background: color-mix(in srgb, var(--bg-card) 94%, var(--brand-seal) 6%);
+}
+
+/* 3. 东方任务清单 (Task Lists) */
+.reader-task-list {
+  list-style: none !important;
+  padding-left: 0.5rem !important;
+  margin: 1.2rem 0 !important;
+  text-indent: 0 !important;
+}
+.reader-task-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 0.6rem;
+  line-height: 1.65;
+  text-indent: 0 !important;
+}
+.task-seal-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-line);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #fff;
+  flex-shrink: 0;
+  transform: translateY(2px);
+  transition: all 0.2s ease;
+}
+.reader-task-item.is-done .task-seal-box {
+  background: var(--brand-seal);
+  border-color: var(--brand-seal);
+}
+.reader-task-item.is-done .task-label {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+/* 4. 东方素纸大图展卷灯箱 (Image Lightbox Modal) */
+.image-lightbox-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+.image-lightbox-modal.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 17, 15, 0.82);
+  backdrop-filter: blur(14px);
+}
+.lightbox-stage {
+  position: relative;
+  max-width: 92vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  transform: scale(0.95);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.image-lightbox-modal.is-open .lightbox-stage {
+  transform: scale(1);
+}
+.lightbox-card {
+  padding: 10px;
+  background: #fcfbf9;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: center;
+}
+.lightbox-img {
+  display: block;
+  max-width: 88vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.lightbox-caption {
+  margin-top: 10px;
+  font-family: "Ma Shan Zheng", "Kaiti SC", "楷体", serif;
+  font-size: 1.15rem;
+  color: #2b2520;
+  letter-spacing: 0.05em;
+}
+.lightbox-close-btn {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.lightbox-close-btn:hover {
+  background: rgba(185, 28, 28, 0.85);
+  transform: rotate(90deg);
+}
+
+/* 5. 拓印代码按钮状态 */
+.code-copy-btn.copied {
+  border-color: var(--brand-seal) !important;
+  color: var(--brand-seal) !important;
+  background: var(--brand-seal-bg) !important;
+}
+
+
+/* ==========================================================================
+   v62 · 东方文墨双绝深度升级：3D纸页舞台金石玉质 + 真·毛笔水墨动态打字机 + 白宣墨池永不黑盲
+   ========================================================================== */
+
+/* 1. 打字机书法字体强力保证与水墨入纸浸润 */
+.hero-typewriter-banner {
+  cursor: pointer;
+  user-select: none;
+}
+
+.typewriter-text,
+#hero-typewriter-text {
+  font-family: 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', cursive, serif !important;
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+  color: var(--text-title, #1f1c18);
+  font-weight: 400;
+  text-shadow: 0 0 1px rgba(31, 28, 24, 0.15);
+}
+
+.ink-char {
+  display: inline-block;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  vertical-align: baseline;
+  font-family: 'Ma Shan Zheng', 'Kaiti SC', 'STKaiti', 'KaiTi', cursive, serif !important;
+}
+
+.ink-char.ink-fresh {
+  display: inline-block;
+  animation: inkBrushBloom 0.34s cubic-bezier(0.2, 0.9, 0.3, 1) forwards !important;
+  transform-origin: 30% 80%;
+}
+
+@keyframes inkBrushBloom {
+  0% {
+    opacity: 0.15;
+    filter: blur(2.5px) contrast(1.4);
+    transform: scale(0.92) translateY(1.5px);
+  }
+  50% {
+    opacity: 0.9;
+    filter: blur(0.6px) contrast(1.15);
+    transform: scale(1.02) translateY(-0.5px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0) contrast(1);
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 2. 纸境墨池自由挥毫：永久特种竹尾宣纸装裱，黑白分明，暗色模式绝不黑盲 */
+.calligraphy-stage-card {
+  background: #fdfbf7 !important;
+  color: #1f1c18 !important;
+  max-width: 760px !important;
+  border: 1px solid rgba(168, 140, 100, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.calligraphy-canvas-wrap {
+  height: 380px !important;
+  background: #fdfbf7 !important;
+  box-shadow: inset 0 0 45px rgba(180, 160, 130, 0.15) !important;
+  border-bottom: 1px solid rgba(31, 28, 24, 0.1) !important;
+}
+
+.calligraphy-subtip {
+  font-size: 0.75rem;
+  color: #7a7062 !important;
+  margin-left: 0.25rem;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calligraphy-tools .c-tool-btn {
+  background: #ffffff !important;
+  color: #3f3931 !important;
+  border-color: rgba(31, 28, 24, 0.15) !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-shrink: 0 !important;
+}
+
+.calligraphy-tools .c-tool-btn:hover {
+  background: #f2ede4 !important;
+  color: #1f1c18 !important;
+}
+
+.calligraphy-tools .c-tool-btn.is-active {
+  background: rgba(158, 42, 43, 0.08) !important;
+  border-color: #9e2a2b !important;
+  color: #9e2a2b !important;
+}
+
+.calligraphy-watermark {
+  color: rgba(180, 160, 130, 0.35) !important;
+}
+
+/* 3. 3D 舞台容器精致典雅边框 */
+.v39-stage {
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--bg-card) 98%, var(--bg-subtle) 2%), var(--bg-card));
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.02);
+}
+
+.v39-stage-hint {
+  font-family: 'Ma Shan Zheng', 'Songti SC', serif;
+  letter-spacing: 0.1em;
 }
