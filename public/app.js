@@ -939,35 +939,8 @@ function renderReader(article) {
   }
 
   // Render markdown or html
-  // Build AI Insight Card
-  const insights = article.insights || [
-    "提炼核心思辨与实践手记，回归克制的人文排版与技术自洽；",
-    "以纸境留白对抗数字噪音，在微云之境构筑自治工程流水线；",
-    "长效保活与边缘网络协同，为创作者保留纯净的思想自留地。"
-  ];
-  const density = article.density || "90% · 深度沉淀";
-  
-  const insightCardHTML = `
-    <div class="ai-insight-card">
-      <div class="ai-insight-header">
-        <div class="ai-insight-badge">
-          <svg class="ai-insight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
-          </svg>
-          <span>核心摘要 · 架构备忘</span>
-        </div>
-        <div class="ai-insight-meta">
-          <span class="ai-chip">架构重点 <strong>${escapeHtml(density)}</strong></span>
-          <span class="ai-chip">速读要点</span>
-        </div>
-      </div>
-      <ul class="ai-insight-list">
-        ${insights.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
-      </ul>
-    </div>
-  `;
-  
-  contentEl.innerHTML = insightCardHTML + parseMarkdown(article.content);
+  // v64 · 核心思辨要点统一由 renderInkLens (#ink-lens-card) 呈现，避免正文顶部再次注入重复摘要卡片
+  contentEl.innerHTML = parseMarkdown(article.content);
 
   // v53 · 墨心导读流式落墨动效 (Streamed Ink Lens)
   setTimeout(() => {
@@ -1014,17 +987,21 @@ function renderReader(article) {
   });
 
   // Build Dynamic Table of Contents (TOC) - Desktop Sidebar + Mobile Adaptive Accordion
-  const headings = contentEl.querySelectorAll('h2, h3');
+  const headings = contentEl.querySelectorAll('h2, h3, h4');
   contentEl.querySelectorAll('.reader-toc-container').forEach(el => el.remove());
 
   const desktopTocRail = document.getElementById('reader-desktop-sidebar');
   const mobileTocSlot = document.getElementById('reader-mobile-toc-slot');
 
   if (headings.length >= 2) {
-    const hasH2 = Array.from(headings).some(h => h.tagName.toLowerCase() === 'h2');
+    const headingArr = Array.from(headings);
+    const hasH2 = headingArr.some(h => h.tagName.toLowerCase() === 'h2');
+    const hasH3 = headingArr.some(h => h.tagName.toLowerCase() === 'h3');
+    const topTag = hasH2 ? 'h2' : (hasH3 ? 'h3' : 'h4');
     let tocListHtml = '';
     headings.forEach((h, i) => {
-      const isSub = hasH2 && h.tagName.toLowerCase() === 'h3';
+      if (!h.id) h.id = `sec-auto-${i}`;
+      const isSub = h.tagName.toLowerCase() !== topTag;
       const anchorId = h.id || `heading-${i}`;
       h.id = anchorId;
       tocListHtml += `
@@ -1093,8 +1070,8 @@ function renderReader(article) {
       });
     }
   } else {
-    // v35 · 正文小标题不足两节时目录缺席，但「已读 X%」刻度仍要留在侧栏与移动卷首
-    if (desktopTocRail) desktopTocRail.innerHTML = `<div class="desktop-sidebar-inner">${atelierTocProgressHtml()}</div>`;
+    // v35/v64 · 正文小标题不足两节时保留「已读 X%」刻度，并给出清晰的无分节说明
+    if (desktopTocRail) desktopTocRail.innerHTML = `<div class="desktop-sidebar-inner">${atelierTocProgressHtml()}<div class="desktop-toc-empty-note">整篇连贯随笔 · 无分节目录</div></div>`;
     if (mobileTocSlot) mobileTocSlot.innerHTML = atelierTocProgressHtml('is-mobile-card');
   }
 
@@ -6238,6 +6215,18 @@ window.addEventListener('DOMContentLoaded', () => {
     var insights = article.insights;
     if (!Array.isArray(insights) || insights.length === 0) return;
 
+    var density = article.density ? String(article.density).trim() : '';
+    var safeDensity = density
+      ? (typeof escapeHtml === 'function'
+          ? escapeHtml(density)
+          : density.replace(/[&<>"']/g, function (c) {
+              return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+            }))
+      : '';
+    var densityHtml = safeDensity
+      ? '<span class="ai-chip ink-lens-density">架构重点 <strong>' + safeDensity + '</strong></span>'
+      : '';
+
     var card = document.createElement('div');
     card.id = 'ink-lens-card';
     card.className = 'ink-lens-card';
@@ -6247,7 +6236,10 @@ window.addEventListener('DOMContentLoaded', () => {
           '<span class="ink-lens-icon">🏮</span>' +
           '<span>墨心三得 · 30 秒认知透镜</span>' +
         '</div>' +
-        '<button type="button" class="ink-lens-skip" id="ink-lens-skip" title="跳过打字动效，即刻全显">跳过墨痕 ↗</button>' +
+        '<div class="ink-lens-actions">' +
+          densityHtml +
+          '<button type="button" class="ink-lens-skip" id="ink-lens-skip" title="跳过打字动效，即刻全显">跳过墨痕 ↗</button>' +
+        '</div>' +
       '</div>' +
       '<ul class="ink-lens-list" id="ink-lens-list"></ul>';
 
@@ -6614,7 +6606,7 @@ window.addEventListener('DOMContentLoaded', () => {
       var contentEl = document.getElementById('reader-content');
       if (contentEl && desktopTocRail && scrollContainer) {
         setTimeout(function () {
-          var headings = contentEl.querySelectorAll('h2, h3');
+          var headings = contentEl.querySelectorAll('h2, h3, h4');
           enhanceTocWithFluidInk(headings, desktopTocRail, scrollContainer);
         }, 150);
       }
